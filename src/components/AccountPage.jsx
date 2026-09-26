@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, ArrowUpRight, LogOut, UserRound } from 'lucide-react'
+import { ArrowLeft, ArrowUpRight, LogOut, UserCog, UserRound } from 'lucide-react'
 import companyLogo from '../assets/LOGO-OH.webp'
 import AccountRoleBadge from './AccountRoleBadge.jsx'
 import { apiRequest } from '../utils/api.js'
@@ -109,6 +109,11 @@ function AccountPage() {
               <p className="account-reference">ID de cliente <span>OH-{String(account.id).padStart(6, '0')}</span></p>
               <AccountRoleBadge role={account.role} />
               {notice && <p className="account-notice" role="status">{notice}</p>}
+              {account.role === 'owner' && (
+                <a className="account-admin-link" href="/cuenta/administracion">
+                  <UserCog size={16} /> Administrar cuentas
+                </a>
+              )}
               <div className="account-next-step">
                 <p className="account-kicker">Siguiente paso</p>
                 <h3>Preparar un pedido</h3>

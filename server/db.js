@@ -24,6 +24,13 @@ export async function initializeDatabase() {
     ADD COLUMN IF NOT EXISTS role VARCHAR(32) NOT NULL DEFAULT '${defaultAccountRole}'
   `)
 
+  await pool.query(`
+    ALTER TABLE customer_accounts
+    ADD COLUMN IF NOT EXISTS is_banned BOOLEAN NOT NULL DEFAULT FALSE,
+    ADD COLUMN IF NOT EXISTS banned_at TIMESTAMPTZ,
+    ADD COLUMN IF NOT EXISTS banned_reason VARCHAR(250)
+  `)
+
   const allowedRoles = accountRoleIds.map((role) => `'${role}'`).join(', ')
   await pool.query('ALTER TABLE customer_accounts DROP CONSTRAINT IF EXISTS customer_accounts_role_check')
   await pool.query(`
@@ -51,6 +58,24 @@ export async function initializeDatabase() {
   await pool.query(`
     CREATE INDEX IF NOT EXISTS customer_sessions_expires_at_idx
     ON customer_sessions (expires_at)
+  `)
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS customer_admin_audit (
+      id BIGSERIAL PRIMARY KEY,
+      actor_id BIGINT REFERENCES customer_accounts(id) ON DELETE SET NULL,
+      target_id BIGINT NOT NULL REFERENCES customer_accounts(id) ON DELETE RESTRICT,
+      action VARCHAR(32) NOT NULL CHECK (action IN ('role_changed', 'account_banned', 'account_restored')),
+      previous_value VARCHAR(250),
+      new_value VARCHAR(250),
+      details VARCHAR(500),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `)
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS customer_admin_audit_created_at_idx
+    ON customer_admin_audit (created_at DESC)
   `)
 }
 

@@ -17,6 +17,14 @@ const authRateLimit = rateLimit({
   legacyHeaders: false,
   message: { error: 'Demasiados intentos. Espera unos minutos y vuelve a probar.' },
 })
+const adminRateLimit = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Demasiadas consultas administrativas. Espera un momento.' },
+})
+const ownerManagementLockId = 1_993_004
 
 router.use((_request, response, next) => {
   response.setHeader('Cache-Control', 'no-store')
@@ -87,6 +95,47 @@ function publicAccount(account) {
   return { id: account.id, name: account.name, email: account.email, role }
 }
 
+function adminAccountView(account) {
+  return {
+    ...publicAccount(account),
+    isBanned: Boolean(account.is_banned),
+    bannedAt: account.banned_at,
+    bannedReason: account.banned_reason,
+    createdAt: account.created_at,
+  }
+}
+
+async function requireOwner(request, response, next) {
+  const token = getSessionToken(request)
+  if (!token) return response.status(401).json({ error: 'Inicia sesión para continuar.' })
+
+  const result = await pool.query(
+    `SELECT account.id, account.role, account.is_banned
+     FROM customer_sessions AS session
+     JOIN customer_accounts AS account ON account.id = session.account_id
+     WHERE session.token_hash = $1 AND session.expires_at > NOW()`,
+    [hashToken(token)],
+  )
+  const account = result.rows[0]
+
+  if (!account || account.is_banned) {
+    clearSessionCookie(response)
+    return response.status(401).json({ error: 'La sesión no es válida.' })
+  }
+  if (account.role !== 'owner') {
+    return response.status(403).json({ error: 'Esta sección es exclusiva para Dueño.' })
+  }
+
+  request.adminActor = account
+  return next()
+}
+
+function parseAccountId(value) {
+  if (!/^\d{1,15}$/.test(value ?? '')) return null
+  const accountId = Number(value)
+  return Number.isSafeInteger(accountId) && accountId > 0 ? accountId : null
+}
+
 router.post('/register', verifyOrigin, authRateLimit, async (request, response) => {
   const name = typeof request.body.name === 'string' ? request.body.name.trim() : ''
   const email = typeof request.body.email === 'string' ? request.body.email.trim().toLowerCase() : ''
@@ -131,6 +180,7 @@ router.post('/login', verifyOrigin, authRateLimit, async (request, response) => 
 
   const result = await pool.query(
     `SELECT id, name, email, password_hash, role
+            , is_banned
      FROM customer_accounts
      WHERE email = $1`,
     [email],
@@ -139,6 +189,9 @@ router.post('/login', verifyOrigin, authRateLimit, async (request, response) => 
 
   if (!account || !(await verifyPassword(password, account.password_hash))) {
     return response.status(401).json({ error: 'Correo o contraseña incorrectos.' })
+  }
+  if (account.is_banned) {
+    return response.status(403).json({ error: 'La cuenta está suspendida. Contacta con el equipo.' })
   }
 
   await createSession(account.id, response)
@@ -150,19 +203,186 @@ router.get('/me', async (request, response) => {
   if (!token) return response.json({ account: null })
 
   const result = await pool.query(
-    `SELECT account.id, account.name, account.email, account.role
+    `SELECT account.id, account.name, account.email, account.role, account.is_banned
      FROM customer_sessions AS session
      JOIN customer_accounts AS account ON account.id = session.account_id
      WHERE session.token_hash = $1 AND session.expires_at > NOW()`,
     [hashToken(token)],
   )
 
-  if (!result.rows[0]) {
+  if (!result.rows[0] || result.rows[0].is_banned) {
+    await pool.query('DELETE FROM customer_sessions WHERE token_hash = $1', [hashToken(token)])
     clearSessionCookie(response)
     return response.json({ account: null })
   }
 
   return response.json({ account: publicAccount(result.rows[0]) })
+})
+
+router.get('/admin/accounts', requireOwner, adminRateLimit, async (request, response) => {
+  const search = typeof request.query.search === 'string' ? request.query.search.trim().slice(0, 100) : ''
+  const clientIdMatch = /^OH-(\d{1,15})$/i.exec(search)
+  const exactId = clientIdMatch?.[1] ?? (/^\d{1,15}$/.test(search) ? search : null)
+  const result = await pool.query(
+    `SELECT id, name, email, role, is_banned, banned_at, banned_reason, created_at
+     FROM customer_accounts
+     WHERE ($1::bigint IS NOT NULL AND id = $1::bigint)
+        OR POSITION($2 IN LOWER(name)) > 0
+        OR POSITION($2 IN LOWER(email)) > 0
+     ORDER BY id ASC
+     LIMIT 50`,
+    [exactId, search.toLowerCase()],
+  )
+
+  return response.json({ accounts: result.rows.map(adminAccountView) })
+})
+
+router.get('/admin/audit', requireOwner, adminRateLimit, async (request, response) => {
+  const parsedLimit = Number.parseInt(request.query.limit, 10)
+  const limit = Number.isInteger(parsedLimit) ? Math.max(1, Math.min(30, parsedLimit)) : 15
+  const result = await pool.query(
+    `SELECT audit.id, audit.action, audit.previous_value, audit.new_value,
+            audit.details, audit.created_at,
+            actor.name AS actor_name, target.name AS target_name, target.id AS target_id
+     FROM customer_admin_audit AS audit
+     LEFT JOIN customer_accounts AS actor ON actor.id = audit.actor_id
+     JOIN customer_accounts AS target ON target.id = audit.target_id
+     ORDER BY audit.created_at DESC, audit.id DESC
+     LIMIT $1`,
+    [limit],
+  )
+
+  return response.json({ events: result.rows })
+})
+
+router.post('/admin/accounts/:id/role', verifyOrigin, requireOwner, adminRateLimit, async (request, response) => {
+  const targetId = parseAccountId(request.params.id)
+  const nextRole = typeof request.body.role === 'string' ? request.body.role : ''
+  if (!targetId) return response.status(400).json({ error: 'El ID de cuenta no es válido.' })
+  if (!accountRoleById[nextRole]) return response.status(400).json({ error: 'El rol seleccionado no es válido.' })
+
+  const client = await pool.connect()
+  let transactionOpen = false
+  try {
+    await client.query('BEGIN')
+    transactionOpen = true
+    await client.query('SELECT pg_advisory_xact_lock($1)', [ownerManagementLockId])
+    const targetResult = await client.query(
+      'SELECT id, name, email, role, is_banned, banned_at, banned_reason, created_at FROM customer_accounts WHERE id = $1 FOR UPDATE',
+      [targetId],
+    )
+    const target = targetResult.rows[0]
+    if (!target) {
+      await client.query('ROLLBACK')
+      transactionOpen = false
+      return response.status(404).json({ error: 'No se encontró esa cuenta.' })
+    }
+    if (String(target.id) === '1' && nextRole !== 'owner') {
+      await client.query('ROLLBACK')
+      transactionOpen = false
+      return response.status(409).json({ error: 'La cuenta OH-000001 conserva el rol de Dueño.' })
+    }
+    if (String(target.id) === String(request.adminActor.id) && nextRole !== 'owner') {
+      await client.query('ROLLBACK')
+      transactionOpen = false
+      return response.status(409).json({ error: 'No puedes quitarte tu propio rol de Dueño.' })
+    }
+    if (target.role === 'owner' && nextRole !== 'owner') {
+      const owners = await client.query("SELECT COUNT(*)::int AS count FROM customer_accounts WHERE role = 'owner' AND is_banned = FALSE")
+      if (owners.rows[0].count <= 1) {
+        await client.query('ROLLBACK')
+        transactionOpen = false
+        return response.status(409).json({ error: 'No se puede quitar el último rol de Dueño.' })
+      }
+    }
+    if (target.role === nextRole) {
+      await client.query('COMMIT')
+      transactionOpen = false
+      return response.json({ account: adminAccountView(target) })
+    }
+
+    const updatedResult = await client.query(
+      'UPDATE customer_accounts SET role = $1 WHERE id = $2 RETURNING id, name, email, role, is_banned, banned_at, banned_reason, created_at',
+      [nextRole, targetId],
+    )
+    await client.query(
+      `INSERT INTO customer_admin_audit (actor_id, target_id, action, previous_value, new_value)
+       VALUES ($1, $2, 'role_changed', $3, $4)`,
+      [request.adminActor.id, targetId, target.role, nextRole],
+    )
+    await client.query('COMMIT')
+    transactionOpen = false
+    return response.json({ account: adminAccountView(updatedResult.rows[0]) })
+  } catch (error) {
+    if (transactionOpen) await client.query('ROLLBACK')
+    throw error
+  } finally {
+    client.release()
+  }
+})
+
+router.post('/admin/accounts/:id/ban', verifyOrigin, requireOwner, adminRateLimit, async (request, response) => {
+  const targetId = parseAccountId(request.params.id)
+  const { isBanned } = request.body
+  const reason = typeof request.body.reason === 'string' ? request.body.reason.trim() : ''
+  if (!targetId) return response.status(400).json({ error: 'El ID de cuenta no es válido.' })
+  if (typeof isBanned !== 'boolean') return response.status(400).json({ error: 'Indica si la cuenta se suspende o reactiva.' })
+  if (isBanned && (reason.length < 5 || reason.length > 250)) {
+    return response.status(400).json({ error: 'Escribe un motivo de suspensión entre 5 y 250 caracteres.' })
+  }
+
+  const client = await pool.connect()
+  let transactionOpen = false
+  try {
+    await client.query('BEGIN')
+    transactionOpen = true
+    await client.query('SELECT pg_advisory_xact_lock($1)', [ownerManagementLockId])
+    const targetResult = await client.query(
+      'SELECT id, name, email, role, is_banned, banned_at, banned_reason, created_at FROM customer_accounts WHERE id = $1 FOR UPDATE',
+      [targetId],
+    )
+    const target = targetResult.rows[0]
+    if (!target) {
+      await client.query('ROLLBACK')
+      transactionOpen = false
+      return response.status(404).json({ error: 'No se encontró esa cuenta.' })
+    }
+    if (isBanned && target.role === 'owner') {
+      await client.query('ROLLBACK')
+      transactionOpen = false
+      return response.status(409).json({ error: 'No se puede suspender una cuenta con rol de Dueño.' })
+    }
+    if (Boolean(target.is_banned) === isBanned) {
+      await client.query('COMMIT')
+      transactionOpen = false
+      return response.json({ account: adminAccountView(target) })
+    }
+
+    const updatedResult = await client.query(
+      `UPDATE customer_accounts
+       SET is_banned = $1, banned_at = CASE WHEN $1 THEN NOW() ELSE NULL END,
+           banned_reason = CASE WHEN $1 THEN $2 ELSE NULL END
+       WHERE id = $3
+       RETURNING id, name, email, role, is_banned, banned_at, banned_reason, created_at`,
+      [isBanned, isBanned ? reason : null, targetId],
+    )
+    if (isBanned) {
+      await client.query('DELETE FROM customer_sessions WHERE account_id = $1', [targetId])
+    }
+    await client.query(
+      `INSERT INTO customer_admin_audit (actor_id, target_id, action, previous_value, new_value, details)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [request.adminActor.id, targetId, isBanned ? 'account_banned' : 'account_restored', String(target.is_banned), String(isBanned), reason || null],
+    )
+    await client.query('COMMIT')
+    transactionOpen = false
+    return response.json({ account: adminAccountView(updatedResult.rows[0]) })
+  } catch (error) {
+    if (transactionOpen) await client.query('ROLLBACK')
+    throw error
+  } finally {
+    client.release()
+  }
 })
 
 router.post('/logout', verifyOrigin, async (request, response) => {

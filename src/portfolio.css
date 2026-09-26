@@ -25,7 +25,7 @@
 .account-trigger:hover, .theme-toggle:hover, .menu-toggle:hover { border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
 .theme-toggle, .menu-toggle { width: 38px; height: 38px; padding: 0; }
 .menu-toggle { display: none; }
-.account-dropdown { position: absolute; z-index: 30; top: calc(100% + 10px); right: 0; width: min(310px, calc(100vw - 40px)); padding: 7px; border: 1px solid var(--line); background: var(--bg); box-shadow: 0 16px 34px rgba(0,0,0,.16); }
+.account-dropdown { position: absolute; z-index: 30; top: calc(100% + 10px); right: 0; width: min(310px, calc(100vw - 40px)); padding: 7px; border: 1px solid var(--line); background: var(--bg); box-shadow: 0 16px 34px rgba(0,0,0,.16); transform-origin: top right; animation: header-menu-enter 180ms cubic-bezier(.2,.8,.2,1) both; }
 .account-dropdown-heading { margin: 0; padding: 9px 10px 7px; color: var(--muted); font-size: 9px; font-weight: 800; text-transform: uppercase; }
 .account-dropdown > a, .account-dropdown > button { display: flex; width: 100%; min-height: 42px; align-items: center; gap: 10px; padding: 0 10px; border: 0; background: transparent; color: var(--text); font-size: 11px; font-weight: 700; text-align: left; text-decoration: none; cursor: pointer; }
 .account-dropdown > a:hover, .account-dropdown > button:not(:disabled):hover { background: var(--surface); }
@@ -42,6 +42,8 @@
 .account-dropdown-divider { height: 1px; margin: 5px 3px; background: var(--line); }
 .account-dropdown > .account-dropdown-logout { color: #b3261e; }
 .account-dropdown-error { margin: 5px 10px 8px; color: #b3261e; font-size: 10px; line-height: 1.5; }
+@keyframes header-menu-enter { from { opacity: 0; transform: translateY(-6px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes header-nav-enter { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
 
 /* Hero */
 .hero { position: relative; display: flex; min-height: min(900px, 100svh); align-items: center; overflow: hidden; padding-top: 84px; background: #141311; color: #f6f4ef; }
@@ -230,7 +232,7 @@
   .account-dropdown { right: -88px; }
   .menu-toggle { display: grid; }
   .main-nav { position: absolute; top: 72px; right: 20px; left: 20px; display: none; align-items: stretch; gap: 0; padding: 8px 18px; border: 1px solid var(--line); background: var(--bg); box-shadow: 0 16px 34px rgba(0,0,0,.16); }
-  .main-nav.is-open { display: flex; flex-direction: column; }
+  .main-nav.is-open { display: flex; flex-direction: column; animation: header-nav-enter 200ms cubic-bezier(.2,.8,.2,1) both; }
   .main-nav > a { min-height: 48px; border-bottom: 1px solid var(--line); }
   .main-nav .nav-contact { margin-left: 0; border-bottom: 0; }
   .hero { min-height: 100svh; padding-top: 72px; }
@@ -322,6 +324,7 @@
 @keyframes hero-fade-in { from { opacity: 0; } to { opacity: 1; } }
 
 @media (prefers-reduced-motion: reduce) {
+  .account-dropdown, .main-nav.is-open { animation: none; }
   .scroll-reveal { transform: none; transition: opacity 320ms ease var(--reveal-delay, 0ms); }
   .image-reveal { transition: opacity 320ms ease; }
   .hero-copy { animation: hero-fade-in 320ms ease both; }

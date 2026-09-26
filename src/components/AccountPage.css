@@ -13,10 +13,12 @@
 .account-kicker { margin-bottom: 8px; color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .account-form-panel h2 { margin: 0 0 8px; font-size: 34px; font-weight: 600; line-height: 1.1; }
 .account-form-intro, .account-email { margin-bottom: 23px; color: var(--muted); font-size: 12px; }
-.account-mode { display: grid; grid-template-columns: 1fr 1fr; margin: 23px 0; border-bottom: 1px solid var(--line); }
+.account-mode { position: relative; display: grid; grid-template-columns: 1fr 1fr; margin: 23px 0; border-bottom: 1px solid var(--line); }
+.account-mode::after { position: absolute; right: 0; bottom: -1px; left: 0; width: 50%; height: 2px; background: var(--accent); content: ''; pointer-events: none; transform: translateX(0); transition: transform 300ms cubic-bezier(.2,.8,.2,1); }
+.account-mode[data-mode='register']::after { transform: translateX(100%); }
 .account-mode button { min-height: 43px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--muted); cursor: pointer; font-size: 12px; font-weight: 700; }
-.account-mode button.is-selected { border-bottom-color: var(--accent); color: var(--text); }
-.account-form { display: grid; gap: 17px; }
+.account-mode button.is-selected { color: var(--text); }
+.account-form { display: grid; gap: 17px; animation: account-form-enter 240ms ease-out both; }
 .account-form label { display: grid; gap: 7px; font-size: 11px; font-weight: 800; }
 .account-form input { width: 100%; min-height: 48px; padding: 0 13px; border: 1px solid var(--line); border-radius: 0; background: var(--bg); color: var(--text); font: inherit; font-size: 14px; }
 .account-form input:focus { border-color: var(--text); outline: 2px solid transparent; }
@@ -30,11 +32,19 @@
 .account-session { display: grid; justify-items: start; }
 .account-avatar { display: grid; width: 48px; height: 48px; place-items: center; margin-bottom: 25px; background: var(--accent); color: var(--on-accent); }
 .account-session h2 { margin-bottom: 8px; }
+.account-reference { display: flex; align-items: center; gap: 8px; margin: -13px 0 23px; color: var(--muted); font-size: 11px; }
+.account-reference span { color: var(--text); font-weight: 800; font-variant-numeric: tabular-nums; }
 .account-next-step { width: 100%; margin: 19px 0 22px; padding-top: 18px; border-top: 1px solid var(--line); }
 .account-next-step h3 { margin: 0 0 8px; font-size: 20px; font-weight: 600; }
 .account-next-step > p:last-child { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
 .account-logout { display: inline-flex; min-height: 40px; align-items: center; gap: 9px; padding: 0; border: 0; background: transparent; color: var(--text); cursor: pointer; font-size: 12px; font-weight: 800; }
 .account-footer { display: flex; width: min(100% - 64px, 1320px); min-height: 66px; align-items: center; justify-content: space-between; margin: 0 auto; border-top: 1px solid var(--line); color: var(--muted); font-size: 10px; font-weight: 700; }
+@keyframes account-form-enter { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .account-mode::after { transition: none; }
+  .account-form { animation: none; }
+}
 
 @media (max-width: 760px) {
   .account-topbar, .account-footer { width: calc(100% - 40px); }

@@ -105,6 +105,7 @@ function AccountPage() {
               <p className="account-kicker">Cuenta activa</p>
               <h2>Hola, {account.name}</h2>
               <p className="account-email">{account.email}</p>
+              <p className="account-reference">ID de cliente <span>OH-{String(account.id).padStart(6, '0')}</span></p>
               {notice && <p className="account-notice" role="status">{notice}</p>}
               <div className="account-next-step">
                 <p className="account-kicker">Siguiente paso</p>
@@ -122,7 +123,7 @@ function AccountPage() {
               <h2>{mode === 'register' ? 'Crear cuenta' : 'Iniciar sesión'}</h2>
               <p className="account-form-intro">Guarda tus datos para organizar tu próximo evento.</p>
 
-              <div className="account-mode" role="tablist" aria-label="Acceso a cuenta">
+              <div className="account-mode" data-mode={mode} role="tablist" aria-label="Acceso a cuenta">
                 <button
                   type="button"
                   role="tab"
@@ -143,7 +144,7 @@ function AccountPage() {
                 </button>
               </div>
 
-              <form className="account-form" onSubmit={handleSubmit}>
+              <form className="account-form" key={mode} onSubmit={handleSubmit}>
                 {mode === 'register' && (
                   <label>
                     Nombre completo

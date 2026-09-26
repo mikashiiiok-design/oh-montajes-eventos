@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ArrowLeft, ArrowUpRight, LogOut, UserRound } from 'lucide-react'
 import companyLogo from '../assets/LOGO-OH.webp'
+import AccountRoleBadge from './AccountRoleBadge.jsx'
 import { apiRequest } from '../utils/api.js'
 import './AccountPage.css'
 
@@ -105,6 +106,8 @@ function AccountPage() {
               <p className="account-kicker">Cuenta activa</p>
               <h2>Hola, {account.name}</h2>
               <p className="account-email">{account.email}</p>
+              <p className="account-reference">ID de cliente <span>OH-{String(account.id).padStart(6, '0')}</span></p>
+              <AccountRoleBadge role={account.role} />
               {notice && <p className="account-notice" role="status">{notice}</p>}
               <div className="account-next-step">
                 <p className="account-kicker">Siguiente paso</p>

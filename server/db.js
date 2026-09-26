@@ -1,4 +1,5 @@
 import pg from 'pg'
+import { accountRoleIds, defaultAccountRole } from '../shared/roles.js'
 
 const { Pool } = pg
 
@@ -13,9 +14,30 @@ export async function initializeDatabase() {
       name VARCHAR(100) NOT NULL,
       email VARCHAR(254) NOT NULL UNIQUE,
       password_hash TEXT NOT NULL,
+      role VARCHAR(32) NOT NULL DEFAULT '${defaultAccountRole}',
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `)
+
+  await pool.query(`
+    ALTER TABLE customer_accounts
+    ADD COLUMN IF NOT EXISTS role VARCHAR(32) NOT NULL DEFAULT '${defaultAccountRole}'
+  `)
+
+  const allowedRoles = accountRoleIds.map((role) => `'${role}'`).join(', ')
+  await pool.query('ALTER TABLE customer_accounts DROP CONSTRAINT IF EXISTS customer_accounts_role_check')
+  await pool.query(`
+    ALTER TABLE customer_accounts
+    ADD CONSTRAINT customer_accounts_role_check CHECK (role IN (${allowedRoles}))
+  `)
+
+  const ownerAssignment = await pool.query(
+    'UPDATE customer_accounts SET role = $1 WHERE id = $2 RETURNING id',
+    ['owner', 1],
+  )
+  if (ownerAssignment.rowCount === 0) {
+    console.warn('Owner role migration skipped: customer account OH-000001 was not found.')
+  }
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS customer_sessions (

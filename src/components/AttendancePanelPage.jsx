@@ -90,8 +90,8 @@ function AttendancePanelPage() {
     async function loadAttendance() {
       try {
         const [workersResult, attendanceResult] = await Promise.all([
-          apiRequest('/api/attendance/workers'),
-          apiRequest(`/api/attendance?date=${selectedDate}`),
+          apiRequest('/api/auth/attendance/workers'),
+          apiRequest(`/api/auth/attendance?date=${selectedDate}`),
         ])
 
         if (!isActive) return
@@ -138,7 +138,7 @@ function AttendancePanelPage() {
         status: draft[String(worker.id)] ?? 'present',
       }))
 
-      await apiRequest('/api/attendance', {
+      await apiRequest('/api/auth/attendance', {
         method: 'POST',
         body: JSON.stringify({ date: selectedDate, entries }),
       })

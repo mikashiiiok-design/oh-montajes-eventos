@@ -21,9 +21,14 @@ function AccountPage() {
   const [developmentPanel, setDevelopmentPanel] = useState('')
   const developmentDialogRef = useRef(null)
 
-  const panelItems = account && account.role === 'owner'
-    ? [{ id: 'admin', label: 'Administración', enabled: true }]
-    : []
+  const panelItems = [
+    { id: 'admin', label: 'Administración', enabled: account?.role === 'owner' },
+    { id: 'attendance', label: 'Lista de asistencia', enabled: account?.role === 'owner' },
+    { id: 'furniture', label: 'Mobiliario', enabled: account?.role === 'owner' },
+    { id: 'orders', label: 'Registro de pedidos', enabled: account?.role === 'owner' },
+    { id: 'chats', label: 'Chats', enabled: account?.role === 'owner' },
+    { id: 'balance', label: 'Balance', enabled: account?.role === 'owner' },
+  ]
 
   const visiblePanels = panelItems.filter((panel) => panel.enabled)
 

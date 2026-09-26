@@ -14,8 +14,8 @@
 .account-form-panel h2 { margin: 0 0 8px; font-size: 34px; font-weight: 600; line-height: 1.1; }
 .account-form-intro, .account-email { margin-bottom: 23px; color: var(--muted); font-size: 12px; }
 .account-mode { position: relative; display: grid; grid-template-columns: 1fr 1fr; margin: 23px 0; border-bottom: 1px solid var(--line); }
-.account-mode::after { position: absolute; right: 0; bottom: -1px; left: 0; width: 50%; height: 2px; background: var(--accent); content: ''; pointer-events: none; transform: translateX(0); transition: transform 300ms cubic-bezier(.2,.8,.2,1); }
-.account-mode[data-mode='register']::after { transform: translateX(100%); }
+.account-mode::after { position: absolute; right: auto; bottom: -1px; left: 0; width: 50%; height: 2px; background: var(--accent); content: ''; pointer-events: none; transition: left 300ms cubic-bezier(.2,.8,.2,1); }
+.account-mode[data-mode='register']::after { left: 50%; }
 .account-mode button { min-height: 43px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--muted); cursor: pointer; font-size: 12px; font-weight: 700; }
 .account-mode button.is-selected { color: var(--text); }
 .account-form { display: grid; gap: 17px; animation: account-form-enter 240ms ease-out both; }

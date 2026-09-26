@@ -49,7 +49,6 @@ function PortfolioApp({ pageContent }) {
 
   return (
     <>
-      <PageLoader />
       <SiteHeader theme={theme} onToggleTheme={handleToggleTheme} />
       <main>
         {pageContent ?? (
@@ -70,14 +69,14 @@ function PortfolioApp({ pageContent }) {
 function App() {
   const pathname = window.location.pathname.replace(/\/+$/, '') || '/'
 
-  if (pathname === '/404') return <ErrorPage statusCode={404} />
-  if (pathname === '/500') return <ErrorPage statusCode={500} />
-  if (pathname === '/cuenta/administracion') return <AccountAdminPage />
-  if (pathname === '/cuenta') return <AccountPage />
-  if (pathname === '/galeria') return <PortfolioApp pageContent={<GalleryPage />} />
-  if (pathname !== '/' && pathname !== '/index.html') return <ErrorPage statusCode={404} />
+  if (pathname === '/404') return <><PageLoader /><ErrorPage statusCode={404} /></>
+  if (pathname === '/500') return <><PageLoader /><ErrorPage statusCode={500} /></>
+  if (pathname === '/cuenta/administracion') return <><PageLoader /><AccountAdminPage /></>
+  if (pathname === '/cuenta') return <><PageLoader /><AccountPage /></>
+  if (pathname === '/galeria') return <><PageLoader /><PortfolioApp pageContent={<GalleryPage />} /></>
+  if (pathname !== '/' && pathname !== '/index.html') return <><PageLoader /><ErrorPage statusCode={404} /></>
 
-  return <PortfolioApp />
+  return <><PageLoader /><PortfolioApp /></>
 }
 
 export default App

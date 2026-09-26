@@ -6,5 +6,13 @@ export const allowedOrigins = new Set(
 )
 
 export function isAllowedOrigin(origin) {
-  return !origin || allowedOrigins.has(origin)
+  if (!origin || allowedOrigins.has(origin)) return true
+  if (process.env.NODE_ENV === 'production') return false
+
+  try {
+    const { hostname, protocol } = new URL(origin)
+    return protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(hostname)
+  } catch {
+    return false
+  }
 }

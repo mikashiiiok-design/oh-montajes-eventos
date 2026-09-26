@@ -1,0 +1,34 @@
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "object-src 'none'",
+  "frame-ancestors 'none'",
+  "form-action 'self'",
+  "img-src 'self' data:",
+  "font-src 'self' https://fonts.gstatic.com",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "script-src 'self' 'unsafe-inline'",
+  "connect-src 'self'",
+].join('; ')
+
+export async function onRequest({ request, next }) {
+  const response = await next()
+  const headers = new Headers(response.headers)
+  const pathname = new URL(request.url).pathname
+
+  headers.set('Content-Security-Policy', contentSecurityPolicy)
+  headers.set('Permissions-Policy', 'camera=(), geolocation=(), microphone=()')
+  headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+  headers.set('X-Content-Type-Options', 'nosniff')
+  headers.set('X-Frame-Options', 'DENY')
+
+  if (pathname === '/cuenta' || pathname.startsWith('/api/')) {
+    headers.set('X-Robots-Tag', 'noindex, nofollow')
+  }
+
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  })
+}

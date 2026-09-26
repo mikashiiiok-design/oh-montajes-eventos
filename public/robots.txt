@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /cuenta
+
+Sitemap: https://oh-montajes-eventos.pages.dev/sitemap.xml

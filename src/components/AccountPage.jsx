@@ -16,6 +16,14 @@ function AccountPage() {
   const [notice, setNotice] = useState('')
 
   useEffect(() => {
+    const previousTitle = document.title
+    document.title = 'Acceso de clientes | OH Montajes y Eventos'
+    return () => {
+      document.title = previousTitle
+    }
+  }, [])
+
+  useEffect(() => {
     let isActive = true
 
     apiRequest('/api/auth/me')

@@ -15,7 +15,7 @@
 .account-form-intro, .account-email { margin-bottom: 23px; color: var(--muted); font-size: 12px; }
 .account-mode { position: relative; display: grid; grid-template-columns: 1fr 1fr; margin: 23px 0; border-bottom: 1px solid var(--line); }
 .account-mode::after { position: absolute; right: auto; bottom: -1px; left: 0; width: 50%; height: 2px; background: var(--accent); content: ''; pointer-events: none; transition: left 300ms cubic-bezier(.2,.8,.2,1); }
-.account-mode[data-mode='register']::after { left: 50%; }
+.account-mode[data-mode='register']::after { left: 50%; animation: account-tab-enter 300ms cubic-bezier(.2,.8,.2,1) both; }
 .account-mode button { min-height: 43px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--muted); cursor: pointer; font-size: 12px; font-weight: 700; }
 .account-mode button.is-selected { color: var(--text); }
 .account-form { display: grid; gap: 17px; animation: account-form-enter 240ms ease-out both; }
@@ -40,9 +40,11 @@
 .account-logout { display: inline-flex; min-height: 40px; align-items: center; gap: 9px; padding: 0; border: 0; background: transparent; color: var(--text); cursor: pointer; font-size: 12px; font-weight: 800; }
 .account-footer { display: flex; width: min(100% - 64px, 1320px); min-height: 66px; align-items: center; justify-content: space-between; margin: 0 auto; border-top: 1px solid var(--line); color: var(--muted); font-size: 10px; font-weight: 700; }
 @keyframes account-form-enter { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes account-tab-enter { from { left: 0; } to { left: 50%; } }
 
 @media (prefers-reduced-motion: reduce) {
   .account-mode::after { transition: none; }
+  .account-mode[data-mode='register']::after { animation: none; }
   .account-form { animation: none; }
 }
 

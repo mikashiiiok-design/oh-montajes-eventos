@@ -10,6 +10,7 @@ import SiteFooter from './components/SiteFooter.jsx'
 import PageLoader from './components/PageLoader.jsx'
 import ErrorPage from './components/ErrorPage.jsx'
 import AccountPage from './components/AccountPage.jsx'
+import GalleryPage from './components/GalleryPage.jsx'
 import { useScrollReveal } from './hooks/useScrollReveal.js'
 import { useSmoothAnchorNavigation } from './hooks/useSmoothAnchorNavigation.js'
 import './portfolio.css'
@@ -22,7 +23,7 @@ function getInitialTheme() {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
-function PortfolioApp() {
+function PortfolioApp({ pageContent }) {
   const [theme, setTheme] = useState(getInitialTheme)
 
   useScrollReveal()
@@ -50,11 +51,15 @@ function PortfolioApp() {
       <PageLoader />
       <SiteHeader theme={theme} onToggleTheme={handleToggleTheme} />
       <main>
-        <HeroSection />
-        <ProjectSection />
-        <ServicesSection />
-        <AboutSection />
-        <ContactSection />
+        {pageContent ?? (
+          <>
+            <HeroSection />
+            <ProjectSection />
+            <ServicesSection />
+            <AboutSection />
+            <ContactSection />
+          </>
+        )}
       </main>
       <SiteFooter />
     </>
@@ -71,7 +76,7 @@ function App() {
 
   if (isReservedErrorPath) return <PortfolioApp />
   if (pathname === '/cuenta') return <AccountPage />
-  if (pathname === '/galeria') return <ErrorPage statusCode={503} />
+  if (pathname === '/galeria') return <PortfolioApp pageContent={<GalleryPage />} />
   if (pathname !== '/' && pathname !== '/index.html') return <ErrorPage statusCode={404} />
 
   return <PortfolioApp />

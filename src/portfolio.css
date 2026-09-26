@@ -18,9 +18,30 @@
 .main-nav > a:hover { color: var(--text); }
 .main-nav .nav-contact { margin-left: 12px; color: var(--text); }
 .header-actions { display: flex; align-items: center; gap: 10px; margin-left: 30px; }
-.theme-toggle, .menu-toggle { display: grid; place-items: center; width: 38px; height: 38px; padding: 0; border: 1px solid var(--line); border-radius: 50%; background: transparent; color: var(--text); cursor: pointer; transition: background 160ms ease, color 160ms ease; }
-.theme-toggle:hover, .menu-toggle:hover { border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
+.account-menu { position: relative; }
+.account-trigger, .theme-toggle, .menu-toggle { display: flex; align-items: center; justify-content: center; min-height: 38px; padding: 0 12px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--text); cursor: pointer; transition: background 160ms ease, border-color 160ms ease, color 160ms ease; }
+.account-trigger { gap: 7px; font-size: 11px; font-weight: 800; }
+.account-trigger.is-authenticated { width: 40px; height: 40px; min-height: 40px; padding: 0; }
+.account-trigger:hover, .theme-toggle:hover, .menu-toggle:hover { border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
+.theme-toggle, .menu-toggle { width: 38px; height: 38px; padding: 0; }
 .menu-toggle { display: none; }
+.account-dropdown { position: absolute; z-index: 30; top: calc(100% + 10px); right: 0; width: min(310px, calc(100vw - 40px)); padding: 7px; border: 1px solid var(--line); background: var(--bg); box-shadow: 0 16px 34px rgba(0,0,0,.16); }
+.account-dropdown-heading { margin: 0; padding: 9px 10px 7px; color: var(--muted); font-size: 9px; font-weight: 800; text-transform: uppercase; }
+.account-dropdown > a, .account-dropdown > button { display: flex; width: 100%; min-height: 42px; align-items: center; gap: 10px; padding: 0 10px; border: 0; background: transparent; color: var(--text); font-size: 11px; font-weight: 700; text-align: left; text-decoration: none; cursor: pointer; }
+.account-dropdown > a:hover, .account-dropdown > button:not(:disabled):hover { background: var(--surface); }
+.account-dropdown > a svg, .account-dropdown > button svg { flex: 0 0 auto; color: var(--accent); }
+.account-dropdown > .account-dropdown-unavailable { color: var(--muted); cursor: not-allowed; }
+.account-dropdown > .account-dropdown-unavailable svg { color: var(--muted); }
+.account-dropdown-unavailable small { margin-left: auto; font-size: 9px; font-weight: 600; }
+.account-dropdown-identity { display: flex; min-width: 0; align-items: center; gap: 10px; padding: 9px 8px 12px; border-bottom: 1px solid var(--line); margin-bottom: 5px; }
+.account-dropdown-avatar { display: grid; width: 36px; height: 36px; flex: 0 0 auto; place-items: center; border-radius: 50%; background: var(--surface); color: var(--accent); }
+.account-dropdown-user { display: grid; min-width: 0; gap: 1px; }
+.account-dropdown-user strong, .account-dropdown-user > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.account-dropdown-user strong { font-size: 11px; }
+.account-dropdown-user > span { color: var(--muted); font-size: 10px; }
+.account-dropdown-divider { height: 1px; margin: 5px 3px; background: var(--line); }
+.account-dropdown > .account-dropdown-logout { color: #b3261e; }
+.account-dropdown-error { margin: 5px 10px 8px; color: #b3261e; font-size: 10px; line-height: 1.5; }
 
 /* Hero */
 .hero { position: relative; display: flex; min-height: min(900px, 100svh); align-items: center; overflow: hidden; padding-top: 84px; background: #141311; color: #f6f4ef; }
@@ -203,6 +224,10 @@
   .footer-logo { width: 96px; height: 96px; }
   .header-actions { gap: 8px; margin-left: auto; }
   .theme-toggle, .menu-toggle { width: 36px; height: 36px; }
+  .account-trigger { width: 36px; height: 36px; min-height: 36px; padding: 0; }
+  .account-trigger span { display: none; }
+  .account-trigger.is-authenticated { width: 36px; height: 36px; min-height: 36px; }
+  .account-dropdown { right: -88px; }
   .menu-toggle { display: grid; }
   .main-nav { position: absolute; top: 72px; right: 20px; left: 20px; display: none; align-items: stretch; gap: 0; padding: 8px 18px; border: 1px solid var(--line); background: var(--bg); box-shadow: 0 16px 34px rgba(0,0,0,.16); }
   .main-nav.is-open { display: flex; flex-direction: column; }

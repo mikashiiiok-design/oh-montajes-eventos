@@ -24,3 +24,4 @@ databases:
     plan: free
     region: ohio
     postgresMajorVersion: '17'
+    ipAllowList: []

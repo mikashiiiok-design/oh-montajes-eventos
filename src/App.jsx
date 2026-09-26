@@ -11,6 +11,9 @@ import PageLoader from './components/PageLoader.jsx'
 import ErrorPage from './components/ErrorPage.jsx'
 import AccountPage from './components/AccountPage.jsx'
 import AccountAdminPage from './components/AccountAdminPage.jsx'
+import AttendancePanelPage from './components/AttendancePanelPage.jsx'
+import GalleryPage from './components/GalleryPage.jsx'
+import LegalPage from './components/LegalPage.jsx'
 import { useScrollReveal } from './hooks/useScrollReveal.js'
 import { useSmoothAnchorNavigation } from './hooks/useSmoothAnchorNavigation.js'
 import './portfolio.css'
@@ -23,7 +26,7 @@ function getInitialTheme() {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
-function PortfolioApp() {
+function PortfolioApp({ pageContent }) {
   const [theme, setTheme] = useState(getInitialTheme)
 
   useScrollReveal()
@@ -48,14 +51,17 @@ function PortfolioApp() {
 
   return (
     <>
-      <PageLoader />
       <SiteHeader theme={theme} onToggleTheme={handleToggleTheme} />
       <main>
-        <HeroSection />
-        <ProjectSection />
-        <ServicesSection />
-        <AboutSection />
-        <ContactSection />
+        {pageContent ?? (
+          <>
+            <HeroSection />
+            <ProjectSection />
+            <ServicesSection />
+            <AboutSection />
+            <ContactSection />
+          </>
+        )}
       </main>
       <SiteFooter />
     </>
@@ -64,19 +70,18 @@ function PortfolioApp() {
 
 function App() {
   const pathname = window.location.pathname.replace(/\/+$/, '') || '/'
-  const isReservedErrorPath = pathname === '/404' || pathname === '/500'
 
-  useLayoutEffect(() => {
-    if (isReservedErrorPath) window.history.replaceState(null, '', '/')
-  }, [isReservedErrorPath])
+  if (pathname === '/404') return <><PageLoader /><ErrorPage statusCode={404} /></>
+  if (pathname === '/500') return <><PageLoader /><ErrorPage statusCode={500} /></>
+  if (pathname === '/cuenta/administracion') return <><PageLoader /><AccountAdminPage /></>
+  if (pathname === '/cuenta/asistencia') return <><PageLoader /><AttendancePanelPage /></>
+  if (pathname === '/cuenta') return <><PageLoader /><AccountPage /></>
+  if (pathname === '/terminos-y-condiciones') return <><PageLoader /><LegalPage variant="terms" /></>
+  if (pathname === '/terminos-de-servicio') return <><PageLoader /><LegalPage variant="service" /></>
+  if (pathname === '/galeria') return <><PageLoader /><PortfolioApp pageContent={<GalleryPage />} /></>
+  if (pathname !== '/' && pathname !== '/index.html') return <><PageLoader /><ErrorPage statusCode={404} /></>
 
-  if (isReservedErrorPath) return <PortfolioApp />
-  if (pathname === '/cuenta/administracion') return <AccountAdminPage />
-  if (pathname === '/cuenta') return <AccountPage />
-  if (pathname === '/galeria') return <ErrorPage statusCode={503} />
-  if (pathname !== '/' && pathname !== '/index.html') return <ErrorPage statusCode={404} />
-
-  return <PortfolioApp />
+  return <><PageLoader /><PortfolioApp /></>
 }
 
 export default App

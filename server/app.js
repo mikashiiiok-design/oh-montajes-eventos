@@ -10,7 +10,20 @@ import { isAllowedOrigin } from './security.js'
 const app = express()
 app.set('trust proxy', 1)
 
-app.use(helmet())
+app.use(helmet({
+  contentSecurityPolicy: {
+    useDefaults: true,
+    directives: {
+      'default-src': ["'self'"],
+      'script-src': ["'self'", "'unsafe-inline'", 'https://static.cloudflareinsights.com', 'https://*.cloudflare.com'],
+      'script-src-elem': ["'self'", "'unsafe-inline'", 'https://static.cloudflareinsights.com', 'https://*.cloudflare.com'],
+      'connect-src': ["'self'", 'https://*.pages.dev', 'https://render-backend-test.oh-montajes-eventos.pages.dev', 'https://*.cloudflare.com'],
+      'img-src': ["'self'", 'data:', 'https:'],
+      'style-src': ["'self'", "'unsafe-inline'"],
+      'font-src': ["'self'", 'data:', 'https:'],
+    },
+  },
+}))
 app.use(cors({
   origin: (origin, callback) => callback(null, isAllowedOrigin(origin)),
   credentials: true,

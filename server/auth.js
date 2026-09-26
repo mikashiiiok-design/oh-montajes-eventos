@@ -25,6 +25,8 @@ const adminRateLimit = rateLimit({
   message: { error: 'Demasiadas consultas administrativas. Espera un momento.' },
 })
 const ownerManagementLockId = 1_993_004
+const attendanceAllowedRoles = new Set(['owner', 'warehouse_manager', 'secretary', 'employee'])
+const attendanceStatusValues = new Set(['present', 'late', 'late_justified', 'absent'])
 
 router.use((_request, response, next) => {
   response.setHeader('Cache-Control', 'no-store')
@@ -105,12 +107,12 @@ function adminAccountView(account) {
   }
 }
 
-async function requireOwner(request, response, next) {
+async function resolveSessionAccount(request, response) {
   const token = getSessionToken(request)
-  if (!token) return response.status(401).json({ error: 'Inicia sesión para continuar.' })
+  if (!token) return null
 
   const result = await pool.query(
-    `SELECT account.id, account.role, account.is_banned
+    `SELECT account.id, account.name, account.email, account.role, account.is_banned
      FROM customer_sessions AS session
      JOIN customer_accounts AS account ON account.id = session.account_id
      WHERE session.token_hash = $1 AND session.expires_at > NOW()`,
@@ -119,15 +121,27 @@ async function requireOwner(request, response, next) {
   const account = result.rows[0]
 
   if (!account || account.is_banned) {
+    await pool.query('DELETE FROM customer_sessions WHERE token_hash = $1', [hashToken(token)])
     clearSessionCookie(response)
-    return response.status(401).json({ error: 'La sesión no es válida.' })
+    return null
   }
+
+  return account
+}
+
+async function requireOwner(request, response, next) {
+  const account = await resolveSessionAccount(request, response)
+  if (!account) return response.status(401).json({ error: 'Inicia sesión para continuar.' })
   if (account.role !== 'owner') {
     return response.status(403).json({ error: 'Esta sección es exclusiva para Dueño.' })
   }
 
   request.adminActor = account
   return next()
+}
+
+function createAttendanceHash({ accountId, attendanceDate, status, notes, createdBy }) {
+  return createHash('sha256').update(`${accountId}|${attendanceDate}|${status}|${notes ?? ''}|${createdBy ?? ''}`).digest('hex')
 }
 
 function parseAccountId(value) {
@@ -140,9 +154,13 @@ router.post('/register', verifyOrigin, authRateLimit, async (request, response) 
   const name = typeof request.body.name === 'string' ? request.body.name.trim() : ''
   const email = typeof request.body.email === 'string' ? request.body.email.trim().toLowerCase() : ''
   const password = typeof request.body.password === 'string' ? request.body.password : ''
+  const acceptTerms = request.body.acceptTerms === true
 
   if (name.length < 2 || name.length > 100) {
     return response.status(400).json({ error: 'Escribe tu nombre (de 2 a 100 caracteres).' })
+  }
+  if (!acceptTerms) {
+    return response.status(400).json({ error: 'Debes aceptar los Términos y condiciones y los Términos de uso para registrarte.' })
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
     return response.status(400).json({ error: 'Escribe un correo electrónico válido.' })
@@ -217,6 +235,154 @@ router.get('/me', async (request, response) => {
   }
 
   return response.json({ account: publicAccount(result.rows[0]) })
+})
+
+router.get('/attendance/workers', verifyOrigin, async (request, response) => {
+  const account = await resolveSessionAccount(request, response)
+  if (!account || !attendanceAllowedRoles.has(account.role)) {
+    return response.status(403).json({ error: 'No tienes permiso para acceder a este panel.' })
+  }
+
+  const attendanceWorkerRoles = [...attendanceAllowedRoles].filter((role) => role !== 'owner')
+  const result = await pool.query(
+    `SELECT id, name, email, role
+     FROM customer_accounts
+     WHERE role = ANY($1)
+     ORDER BY name ASC`,
+    [attendanceWorkerRoles],
+  )
+
+  return response.json({ workers: result.rows })
+})
+
+router.get('/attendance', verifyOrigin, async (request, response) => {
+  const account = await resolveSessionAccount(request, response)
+  if (!account || !attendanceAllowedRoles.has(account.role)) {
+    return response.status(403).json({ error: 'No tienes permiso para acceder a este panel.' })
+  }
+
+  const requestedDate = typeof request.query.date === 'string' ? request.query.date : new Date().toISOString().slice(0, 10)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(requestedDate)) {
+    return response.status(400).json({ error: 'La fecha no es válida.' })
+  }
+
+  const parsedDate = new Date(`${requestedDate}T12:00:00`)
+  if (Number.isNaN(parsedDate.getTime())) {
+    return response.status(400).json({ error: 'La fecha no es válida.' })
+  }
+
+  const attendanceWorkerRoles = [...attendanceAllowedRoles].filter((role) => role !== 'owner')
+  const result = await pool.query(
+    `SELECT ca.id AS account_id, ca.name, ca.role, ar.status, ar.notes, ar.record_hash
+     FROM customer_accounts AS ca
+     LEFT JOIN attendance_records AS ar
+       ON ar.account_id = ca.id AND ar.attendance_date = $1
+     WHERE ca.role = ANY($2)
+     ORDER BY ca.name ASC`,
+    [requestedDate, attendanceWorkerRoles],
+  )
+
+  const records = result.rows.map((row) => ({
+    accountId: row.account_id,
+    name: row.name,
+    role: row.role,
+    status: row.status ?? 'present',
+    notes: row.notes,
+    recordHash: row.record_hash,
+  }))
+
+  return response.json({ date: requestedDate, records })
+})
+
+router.post('/attendance', verifyOrigin, async (request, response) => {
+  const account = await resolveSessionAccount(request, response)
+  if (!account || !attendanceAllowedRoles.has(account.role)) {
+    return response.status(403).json({ error: 'No tienes permiso para guardar asistencia.' })
+  }
+
+  const attendanceDate = typeof request.body.date === 'string' ? request.body.date : ''
+  const entries = Array.isArray(request.body.entries) ? request.body.entries : []
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(attendanceDate)) {
+    return response.status(400).json({ error: 'La fecha de asistencia no es válida.' })
+  }
+
+  if (entries.length === 0) {
+    return response.status(400).json({ error: 'Debes enviar al menos un registro.' })
+  }
+
+  const attendanceWorkerRoles = [...attendanceAllowedRoles].filter((role) => role !== 'owner')
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
+
+    const savedRecords = []
+    const seenAccountIds = new Set()
+
+    for (const entry of entries) {
+      const accountId = parseAccountId(entry?.accountId)
+      const status = typeof entry?.status === 'string' ? entry.status : ''
+      const notes = typeof entry?.notes === 'string' ? entry.notes.trim().slice(0, 250) : ''
+
+      if (!accountId || !attendanceStatusValues.has(status)) {
+        await client.query('ROLLBACK')
+        return response.status(400).json({ error: 'Hay un registro de asistencia con datos no válidos.' })
+      }
+      if (seenAccountIds.has(accountId)) {
+        await client.query('ROLLBACK')
+        return response.status(400).json({ error: 'Hay trabajadores duplicados en el mismo registro.' })
+      }
+      seenAccountIds.add(accountId)
+
+      const target = await client.query(
+        `SELECT id, name, role FROM customer_accounts WHERE id = $1 AND role = ANY($2)`,
+        [accountId, attendanceWorkerRoles],
+      )
+      if (target.rowCount === 0) {
+        await client.query('ROLLBACK')
+        return response.status(400).json({ error: 'Solo se pueden registrar trabajadores autorizados.' })
+      }
+
+      const existing = await client.query(
+        `SELECT id FROM attendance_records WHERE account_id = $1 AND attendance_date = $2`,
+        [accountId, attendanceDate],
+      )
+      if (existing.rowCount > 0) {
+        await client.query('ROLLBACK')
+        return response.status(409).json({ error: `El registro para ${target.rows[0].name} ya existe en esta fecha.` })
+      }
+
+      const recordHash = createAttendanceHash({
+        accountId,
+        attendanceDate,
+        status,
+        notes,
+        createdBy: account.id,
+      })
+
+      const result = await client.query(
+        `INSERT INTO attendance_records (account_id, attendance_date, status, notes, created_by, record_hash)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING id, account_id, status, notes, record_hash, created_at`,
+        [accountId, attendanceDate, status, notes || null, account.id, recordHash],
+      )
+
+      savedRecords.push({
+        accountId: result.rows[0].account_id,
+        status: result.rows[0].status,
+        notes: result.rows[0].notes,
+        recordHash: result.rows[0].record_hash,
+      })
+    }
+
+    await client.query('COMMIT')
+    return response.status(201).json({ date: attendanceDate, records: savedRecords })
+  } catch (error) {
+    await client.query('ROLLBACK')
+    throw error
+  } finally {
+    client.release()
+  }
 })
 
 router.get('/admin/accounts', requireOwner, adminRateLimit, async (request, response) => {

@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
-import { ArrowLeft, ArrowUpRight, LogOut, UserCog, UserRound } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { ArrowLeft, ArrowUpRight, LogOut, UserRound, X } from 'lucide-react'
 import companyLogo from '../assets/LOGO-OH.webp'
 import AccountRoleBadge from './AccountRoleBadge.jsx'
 import { apiRequest } from '../utils/api.js'
+import { notifyAccountSync, subscribeToAccountSync } from '../utils/accountSync.js'
 import './AccountPage.css'
 
 function AccountPage() {
@@ -10,11 +11,27 @@ function AccountPage() {
     ? 'register'
     : 'login'
   const [mode, setMode] = useState(initialMode)
+  const [isModeIndicatorReady, setIsModeIndicatorReady] = useState(false)
   const [account, setAccount] = useState(null)
   const [isChecking, setIsChecking] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  const [isDevelopmentOpen, setIsDevelopmentOpen] = useState(false)
+  const [developmentPanel, setDevelopmentPanel] = useState('')
+  const developmentDialogRef = useRef(null)
+
+  const attendanceRoles = new Set(['owner', 'warehouse_manager', 'secretary', 'employee'])
+  const panelItems = [
+    { id: 'admin', label: 'Administración', enabled: account?.role === 'owner' },
+    { id: 'attendance', label: 'Lista de asistencia', enabled: attendanceRoles.has(account?.role) },
+    { id: 'furniture', label: 'Mobiliario', enabled: account?.role === 'owner' },
+    { id: 'orders', label: 'Registro de pedidos', enabled: account?.role === 'owner' },
+    { id: 'chats', label: 'Chats', enabled: account?.role === 'owner' },
+    { id: 'balance', label: 'Balance', enabled: account?.role === 'owner' },
+  ]
+
+  const visiblePanels = panelItems.filter((panel) => panel.enabled)
 
   useEffect(() => {
     const previousTitle = document.title
@@ -25,19 +42,49 @@ function AccountPage() {
   }, [])
 
   useEffect(() => {
+    const frameId = window.requestAnimationFrame(() => setIsModeIndicatorReady(true))
+    return () => window.cancelAnimationFrame(frameId)
+  }, [])
+
+  useEffect(() => {
+    const dialog = developmentDialogRef.current
+    if (!dialog) return
+    if (isDevelopmentOpen && !dialog.open) dialog.showModal()
+    if (!isDevelopmentOpen && dialog.open) dialog.close()
+  }, [isDevelopmentOpen])
+
+  useEffect(() => {
     let isActive = true
 
-    apiRequest('/api/auth/me')
-      .then(({ account: activeAccount }) => {
+    async function refreshSession() {
+      try {
+        const { account: activeAccount } = await apiRequest('/api/auth/me')
         if (isActive) setAccount(activeAccount)
-      })
-      .catch(() => {})
-      .finally(() => {
+      } catch {
+        if (isActive) setAccount(null)
+      } finally {
         if (isActive) setIsChecking(false)
-      })
+      }
+    }
+
+    refreshSession()
+
+    const handleFocus = () => {
+      if (isActive) refreshSession()
+    }
+
+    const unsubscribe = subscribeToAccountSync(() => {
+      if (isActive) refreshSession()
+    })
+
+    window.addEventListener('focus', handleFocus)
+    window.addEventListener('pageshow', handleFocus)
 
     return () => {
       isActive = false
+      unsubscribe()
+      window.removeEventListener('focus', handleFocus)
+      window.removeEventListener('pageshow', handleFocus)
     }
   }, [])
 
@@ -52,7 +99,15 @@ function AccountPage() {
       email: formData.get('email'),
       password: formData.get('password'),
     }
-    if (mode === 'register') payload.name = formData.get('name')
+    if (mode === 'register') {
+      payload.name = formData.get('name')
+      payload.acceptTerms = formData.get('acceptTerms') === 'on'
+      if (!payload.acceptTerms) {
+        setError('Debes aceptar los Términos y condiciones y los Términos de uso para continuar.')
+        setIsSubmitting(false)
+        return
+      }
+    }
 
     try {
       const result = await apiRequest(`/api/auth/${mode}`, {
@@ -61,6 +116,7 @@ function AccountPage() {
       })
       setAccount(result.account)
       setNotice(mode === 'register' ? 'Tu cuenta quedó creada.' : 'Sesión iniciada.')
+      notifyAccountSync()
     } catch (requestError) {
       setError(requestError.message)
     } finally {
@@ -75,9 +131,20 @@ function AccountPage() {
       setAccount(null)
       setMode('login')
       setNotice('Cerraste sesión.')
+      notifyAccountSync()
     } catch (requestError) {
       setError(requestError.message)
     }
+  }
+
+  function openDevelopmentModal(panelName) {
+    setDevelopmentPanel(panelName)
+    setIsDevelopmentOpen(true)
+  }
+
+  function closeDevelopmentModal() {
+    setDevelopmentPanel('')
+    setIsDevelopmentOpen(false)
   }
 
   return (
@@ -109,11 +176,44 @@ function AccountPage() {
               <p className="account-reference">ID de cliente <span>OH-{String(account.id).padStart(6, '0')}</span></p>
               <AccountRoleBadge role={account.role} />
               {notice && <p className="account-notice" role="status">{notice}</p>}
-              {account.role === 'owner' && (
-                <a className="account-admin-link" href="/cuenta/administracion">
-                  <UserCog size={16} /> Administrar cuentas
-                </a>
+
+              {visiblePanels.length > 0 && (
+                <div className="account-panel-group" aria-labelledby="account-panels-title">
+                  <div className="account-panel-header">
+                    <p className="account-kicker">Paneles</p>
+                    <h3 id="account-panels-title">Tu espacio de trabajo</h3>
+                  </div>
+                  <div className="account-panel-list">
+                    {panelItems.map((panel) => (
+                      <button
+                        key={panel.id}
+                        type="button"
+                        className={`account-panel-item${panel.enabled ? ' is-enabled' : ' is-disabled'}`}
+                        disabled={!panel.enabled}
+                        onClick={() => {
+                          if (panel.enabled) {
+                            if (panel.id === 'admin') {
+                              window.location.assign('/cuenta/administracion')
+                              return
+                            }
+                            if (panel.id === 'attendance') {
+                              window.location.assign('/cuenta/asistencia')
+                              return
+                            }
+                            openDevelopmentModal(panel.label)
+                            return
+                          }
+                          openDevelopmentModal(panel.label)
+                        }}
+                      >
+                        <span className="account-panel-name">{panel.label}</span>
+                        {!panel.enabled && <span className="account-panel-state">En desarrollo</span>}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               )}
+
               <div className="account-next-step">
                 <p className="account-kicker">Siguiente paso</p>
                 <h3>Preparar un pedido</h3>
@@ -130,7 +230,7 @@ function AccountPage() {
               <h2>{mode === 'register' ? 'Crear cuenta' : 'Iniciar sesión'}</h2>
               <p className="account-form-intro">Guarda tus datos para organizar tu próximo evento.</p>
 
-              <div className="account-mode" role="tablist" aria-label="Acceso a cuenta">
+              <div className="account-mode" data-mode={mode} data-indicator-ready={isModeIndicatorReady} role="tablist" aria-label="Acceso a cuenta">
                 <button
                   type="button"
                   role="tab"
@@ -151,7 +251,7 @@ function AccountPage() {
                 </button>
               </div>
 
-              <form className="account-form" onSubmit={handleSubmit}>
+              <form className="account-form" key={mode} onSubmit={handleSubmit}>
                 {mode === 'register' && (
                   <label>
                     Nombre completo
@@ -174,6 +274,14 @@ function AccountPage() {
                   />
                   {mode === 'register' && <span className="account-hint">Mínimo 12 caracteres.</span>}
                 </label>
+                {mode === 'register' && (
+                  <label className="account-legal-check">
+                    <input name="acceptTerms" type="checkbox" required />
+                    <span>
+                      Acepto los <a href="/terminos-y-condiciones" target="_blank" rel="noreferrer">Términos y condiciones</a> y los <a href="/terminos-de-servicio" target="_blank" rel="noreferrer">Términos de uso</a>.
+                    </span>
+                  </label>
+                )}
                 {error && <p className="account-error" role="alert">{error}</p>}
                 {notice && <p className="account-notice" role="status">{notice}</p>}
                 <button className="account-submit" disabled={isSubmitting} type="submit">
@@ -185,6 +293,31 @@ function AccountPage() {
           )}
         </section>
       </div>
+
+      <dialog
+        className="account-development-dialog"
+        ref={developmentDialogRef}
+        aria-labelledby="account-development-title"
+        onClose={closeDevelopmentModal}
+        onCancel={(event) => {
+          event.preventDefault()
+          closeDevelopmentModal()
+        }}
+        onClick={(event) => {
+          if (event.target === event.currentTarget) closeDevelopmentModal()
+        }}
+      >
+        <div className="account-development-shell">
+          <button className="account-development-close" type="button" aria-label="Cerrar aviso" onClick={closeDevelopmentModal}>
+            <X size={16} />
+          </button>
+          <p className="account-kicker">Panel en desarrollo</p>
+          <h2 id="account-development-title">{developmentPanel || 'Este panel'} sigue en desarrollo</h2>
+          <p>Estamos trabajando en esta funcionalidad para dejarla disponible próximamente.</p>
+          <button className="account-development-confirm" type="button" onClick={closeDevelopmentModal}>Cerrar</button>
+        </div>
+      </dialog>
+
       <footer className="account-footer">OH Montajes y Eventos <span>Medellín · Colombia</span></footer>
     </main>
   )

@@ -9,6 +9,7 @@ function AccountPage() {
     ? 'register'
     : 'login'
   const [mode, setMode] = useState(initialMode)
+  const [isModeIndicatorReady, setIsModeIndicatorReady] = useState(false)
   const [account, setAccount] = useState(null)
   const [isChecking, setIsChecking] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -21,6 +22,11 @@ function AccountPage() {
     return () => {
       document.title = previousTitle
     }
+  }, [])
+
+  useEffect(() => {
+    const frameId = window.requestAnimationFrame(() => setIsModeIndicatorReady(true))
+    return () => window.cancelAnimationFrame(frameId)
   }, [])
 
   useEffect(() => {
@@ -123,7 +129,7 @@ function AccountPage() {
               <h2>{mode === 'register' ? 'Crear cuenta' : 'Iniciar sesión'}</h2>
               <p className="account-form-intro">Guarda tus datos para organizar tu próximo evento.</p>
 
-              <div className="account-mode" data-mode={mode} role="tablist" aria-label="Acceso a cuenta">
+              <div className="account-mode" data-mode={mode} data-indicator-ready={isModeIndicatorReady} role="tablist" aria-label="Acceso a cuenta">
                 <button
                   type="button"
                   role="tab"

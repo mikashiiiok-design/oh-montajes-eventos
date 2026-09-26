@@ -4,6 +4,7 @@ import express from 'express'
 import { rateLimit } from 'express-rate-limit'
 import { pool } from './db.js'
 import { isAllowedOrigin } from './security.js'
+import { accountRoleById, defaultAccountRole } from '../shared/roles.js'
 
 const router = express.Router()
 const scrypt = promisify(scryptCallback)
@@ -82,7 +83,8 @@ async function createSession(accountId, response) {
 }
 
 function publicAccount(account) {
-  return { id: account.id, name: account.name, email: account.email }
+  const role = accountRoleById[account.role] ? account.role : defaultAccountRole
+  return { id: account.id, name: account.name, email: account.email, role }
 }
 
 router.post('/register', verifyOrigin, authRateLimit, async (request, response) => {
@@ -105,7 +107,7 @@ router.post('/register', verifyOrigin, authRateLimit, async (request, response) 
     const result = await pool.query(
       `INSERT INTO customer_accounts (name, email, password_hash)
        VALUES ($1, $2, $3)
-       RETURNING id, name, email`,
+      RETURNING id, name, email, role`,
       [name, email, passwordHash],
     )
     const account = result.rows[0]
@@ -128,7 +130,7 @@ router.post('/login', verifyOrigin, authRateLimit, async (request, response) => 
   }
 
   const result = await pool.query(
-    `SELECT id, name, email, password_hash
+    `SELECT id, name, email, password_hash, role
      FROM customer_accounts
      WHERE email = $1`,
     [email],
@@ -148,7 +150,7 @@ router.get('/me', async (request, response) => {
   if (!token) return response.json({ account: null })
 
   const result = await pool.query(
-    `SELECT account.id, account.name, account.email
+    `SELECT account.id, account.name, account.email, account.role
      FROM customer_sessions AS session
      JOIN customer_accounts AS account ON account.id = session.account_id
      WHERE session.token_hash = $1 AND session.expires_at > NOW()`,

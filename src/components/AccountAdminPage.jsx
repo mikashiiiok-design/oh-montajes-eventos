@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ArrowLeft, Ban, RefreshCw, Search, ShieldCheck, UserCog, X } from 'lucide-react'
 import { accountRoleById, accountRoles } from '../../shared/roles.js'
 import { apiRequest } from '../utils/api.js'
+import { notifyAccountSync, subscribeToAccountSync } from '../utils/accountSync.js'
 import AccountRoleBadge from './AccountRoleBadge.jsx'
 import './AccountAdminPage.css'
 
@@ -65,12 +66,34 @@ function AccountAdminPage() {
 
   useEffect(() => {
     let isActive = true
-    apiRequest('/api/auth/me')
-      .then(({ account }) => { if (isActive) setSessionAccount(account) })
-      .catch(() => { if (isActive) setSessionAccount(null) })
-      .finally(() => { if (isActive) setIsCheckingSession(false) })
-    return () => { isActive = false }
+
+    async function refreshSession() {
+      try {
+        const { account } = await apiRequest('/api/auth/me')
+        if (isActive) setSessionAccount(account)
+      } catch {
+        if (isActive) setSessionAccount(null)
+      } finally {
+        if (isActive) setIsCheckingSession(false)
+      }
+    }
+
+    refreshSession()
+    const unsubscribe = subscribeToAccountSync(() => {
+      if (isActive) refreshSession()
+    })
+
+    return () => {
+      isActive = false
+      unsubscribe()
+    }
   }, [])
+
+  useEffect(() => {
+    if (!isCheckingSession && (!sessionAccount || sessionAccount.role !== 'owner')) {
+      window.location.replace('/404')
+    }
+  }, [isCheckingSession, sessionAccount])
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedSearch(search.trim()), 240)
@@ -161,6 +184,7 @@ function AccountAdminPage() {
         })
       }
       setNotice(dialogAction === 'role' ? 'Rol actualizado.' : dialogAction === 'ban' ? 'Cuenta suspendida y sesiones cerradas.' : 'Cuenta reactivada.')
+      notifyAccountSync()
       await reloadData()
       closeTimeoutRef.current = window.setTimeout(() => {
         setSelectedAccount(null)

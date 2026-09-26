@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
-import { ArrowLeft, ArrowUpRight, LogOut, UserCog, UserRound } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { ArrowLeft, ArrowUpRight, LogOut, UserCog, UserRound, X } from 'lucide-react'
 import companyLogo from '../assets/LOGO-OH.webp'
 import AccountRoleBadge from './AccountRoleBadge.jsx'
 import { apiRequest } from '../utils/api.js'
+import { notifyAccountSync, subscribeToAccountSync } from '../utils/accountSync.js'
 import './AccountPage.css'
 
 function AccountPage() {
@@ -16,6 +17,17 @@ function AccountPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  const [isDevelopmentOpen, setIsDevelopmentOpen] = useState(false)
+  const [developmentPanel, setDevelopmentPanel] = useState('')
+  const developmentDialogRef = useRef(null)
+
+  const panelItems = [
+    { id: 'admin', label: 'Administración', enabled: account?.role === 'owner' },
+    { id: 'attendance', label: 'Lista de asistencia', enabled: false },
+    { id: 'furniture', label: 'Mobiliario', enabled: false },
+    { id: 'orders', label: 'Registro de pedidos', enabled: false },
+    { id: 'chats', label: 'Chats', enabled: false },
+  ]
 
   useEffect(() => {
     const previousTitle = document.title
@@ -31,19 +43,35 @@ function AccountPage() {
   }, [])
 
   useEffect(() => {
+    const dialog = developmentDialogRef.current
+    if (!dialog) return
+    if (isDevelopmentOpen && !dialog.open) dialog.showModal()
+    if (!isDevelopmentOpen && dialog.open) dialog.close()
+  }, [isDevelopmentOpen])
+
+  useEffect(() => {
     let isActive = true
 
-    apiRequest('/api/auth/me')
-      .then(({ account: activeAccount }) => {
+    async function refreshSession() {
+      try {
+        const { account: activeAccount } = await apiRequest('/api/auth/me')
         if (isActive) setAccount(activeAccount)
-      })
-      .catch(() => {})
-      .finally(() => {
+      } catch {
+        if (isActive) setAccount(null)
+      } finally {
         if (isActive) setIsChecking(false)
-      })
+      }
+    }
+
+    refreshSession()
+
+    const unsubscribe = subscribeToAccountSync(() => {
+      if (isActive) refreshSession()
+    })
 
     return () => {
       isActive = false
+      unsubscribe()
     }
   }, [])
 
@@ -67,6 +95,7 @@ function AccountPage() {
       })
       setAccount(result.account)
       setNotice(mode === 'register' ? 'Tu cuenta quedó creada.' : 'Sesión iniciada.')
+      notifyAccountSync()
     } catch (requestError) {
       setError(requestError.message)
     } finally {
@@ -81,9 +110,20 @@ function AccountPage() {
       setAccount(null)
       setMode('login')
       setNotice('Cerraste sesión.')
+      notifyAccountSync()
     } catch (requestError) {
       setError(requestError.message)
     }
+  }
+
+  function openDevelopmentModal(panelName) {
+    setDevelopmentPanel(panelName)
+    setIsDevelopmentOpen(true)
+  }
+
+  function closeDevelopmentModal() {
+    setDevelopmentPanel('')
+    setIsDevelopmentOpen(false)
   }
 
   return (
@@ -115,6 +155,38 @@ function AccountPage() {
               <p className="account-reference">ID de cliente <span>OH-{String(account.id).padStart(6, '0')}</span></p>
               <AccountRoleBadge role={account.role} />
               {notice && <p className="account-notice" role="status">{notice}</p>}
+
+              <div className="account-panel-group" aria-labelledby="account-panels-title">
+                <div className="account-panel-header">
+                  <p className="account-kicker">Paneles</p>
+                  <h3 id="account-panels-title">Tu espacio de trabajo</h3>
+                </div>
+                <div className="account-panel-list">
+                  {panelItems.map((panel) => (
+                    <button
+                      key={panel.id}
+                      type="button"
+                      className={`account-panel-item${panel.enabled ? ' is-enabled' : ' is-disabled'}`}
+                      disabled={!panel.enabled}
+                      onClick={() => {
+                        if (panel.enabled) {
+                          if (panel.id === 'admin') {
+                            window.location.assign('/cuenta/administracion')
+                            return
+                          }
+                          openDevelopmentModal(panel.label)
+                          return
+                        }
+                        openDevelopmentModal(panel.label)
+                      }}
+                    >
+                      <span className="account-panel-name">{panel.label}</span>
+                      {!panel.enabled && <span className="account-panel-state">En desarrollo</span>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {account.role === 'owner' && (
                 <a className="account-admin-link" href="/cuenta/administracion">
                   <UserCog size={16} /> Administrar cuentas
@@ -191,6 +263,31 @@ function AccountPage() {
           )}
         </section>
       </div>
+
+      <dialog
+        className="account-development-dialog"
+        ref={developmentDialogRef}
+        aria-labelledby="account-development-title"
+        onClose={closeDevelopmentModal}
+        onCancel={(event) => {
+          event.preventDefault()
+          closeDevelopmentModal()
+        }}
+        onClick={(event) => {
+          if (event.target === event.currentTarget) closeDevelopmentModal()
+        }}
+      >
+        <div className="account-development-shell">
+          <button className="account-development-close" type="button" aria-label="Cerrar aviso" onClick={closeDevelopmentModal}>
+            <X size={16} />
+          </button>
+          <p className="account-kicker">Panel en desarrollo</p>
+          <h2 id="account-development-title">{developmentPanel || 'Este panel'} sigue en desarrollo</h2>
+          <p>Estamos trabajando en esta funcionalidad para dejarla disponible próximamente.</p>
+          <button className="account-development-confirm" type="button" onClick={closeDevelopmentModal}>Cerrar</button>
+        </div>
+      </dialog>
+
       <footer className="account-footer">OH Montajes y Eventos <span>Medellín · Colombia</span></footer>
     </main>
   )

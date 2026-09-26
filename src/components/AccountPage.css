@@ -48,9 +48,27 @@
 .account-role-level { color: var(--muted); font-size: 9px; font-weight: 700; }
 .account-role-tags { display: flex; flex-wrap: wrap; gap: 5px; }
 .account-role-tags span { padding: 3px 7px; border: 1px solid var(--line); color: var(--muted); font-size: 9px; line-height: 1.4; }
+.account-panel-group { width: 100%; margin: 6px 0 18px; padding: 18px 0 0; border-top: 1px solid var(--line); }
+.account-panel-header { margin-bottom: 12px; }
+.account-panel-header h3 { margin: 0; font-size: 20px; font-weight: 600; }
+.account-panel-list { display: grid; gap: 8px; }
+.account-panel-item { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; padding: 0 14px 0 12px; border: 1px solid var(--line); background: var(--bg); color: var(--text); text-align: left; cursor: pointer; }
+.account-panel-item::before { position: absolute; top: 8px; bottom: 8px; left: 0; width: 2px; background: var(--accent); opacity: 0; content: ''; }
+.account-panel-item.is-enabled { border-left: 0; }
+.account-panel-item.is-enabled::before { opacity: 1; }
+.account-panel-item.is-disabled { cursor: not-allowed; opacity: .72; }
+.account-panel-name { font-size: 11px; font-weight: 800; }
+.account-panel-state { display: inline-flex; align-items: center; padding: 4px 7px; border: 1px solid var(--line); color: var(--muted); font-size: 8px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .account-admin-link { display: inline-flex; min-height: 39px; align-items: center; gap: 8px; margin: 0 0 8px; padding: 0 11px; border: 1px solid var(--line); color: var(--text); font-size: 10px; font-weight: 800; text-decoration: none; transition: border-color 160ms ease, color 160ms ease; }
 .account-admin-link:hover { border-color: var(--accent); color: var(--accent); }
 .account-next-step { width: 100%; margin: 19px 0 22px; padding-top: 18px; border-top: 1px solid var(--line); }
+.account-development-dialog { width: min(440px, calc(100% - 32px)); padding: 0; border: 1px solid var(--line); background: var(--bg); color: var(--text); box-shadow: 0 28px 80px rgba(0,0,0,.22); }
+.account-development-dialog::backdrop { background: rgba(15,15,14,.56); }
+.account-development-shell { position: relative; display: grid; gap: 12px; padding: 24px 22px 20px; }
+.account-development-close { position: absolute; top: 12px; right: 12px; display: grid; width: 30px; height: 30px; place-items: center; border: 1px solid var(--line); background: transparent; color: var(--text); cursor: pointer; }
+.account-development-shell h2 { margin: 0; font-size: 24px; font-weight: 600; line-height: 1.1; }
+.account-development-shell p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.7; }
+.account-development-confirm { display: inline-flex; min-height: 38px; align-items: center; justify-content: center; padding: 0 12px; border: 0; background: var(--text); color: var(--bg); font-size: 10px; font-weight: 800; cursor: pointer; }
 .account-next-step h3 { margin: 0 0 8px; font-size: 20px; font-weight: 600; }
 .account-next-step > p:last-child { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
 .account-logout { display: inline-flex; min-height: 40px; align-items: center; gap: 9px; padding: 0; border: 0; background: transparent; color: var(--text); cursor: pointer; font-size: 12px; font-weight: 800; }

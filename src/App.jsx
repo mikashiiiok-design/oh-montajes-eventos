@@ -69,13 +69,9 @@ function PortfolioApp({ pageContent }) {
 
 function App() {
   const pathname = window.location.pathname.replace(/\/+$/, '') || '/'
-  const isReservedErrorPath = pathname === '/404' || pathname === '/500'
 
-  useLayoutEffect(() => {
-    if (isReservedErrorPath) window.history.replaceState(null, '', '/')
-  }, [isReservedErrorPath])
-
-  if (isReservedErrorPath) return <PortfolioApp />
+  if (pathname === '/404') return <ErrorPage statusCode={404} />
+  if (pathname === '/500') return <ErrorPage statusCode={500} />
   if (pathname === '/cuenta/administracion') return <AccountAdminPage />
   if (pathname === '/cuenta') return <AccountPage />
   if (pathname === '/galeria') return <PortfolioApp pageContent={<GalleryPage />} />

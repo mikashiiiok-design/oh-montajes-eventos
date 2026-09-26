@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import companyLogo from '../assets/LOGO-OH.webp'
+import { useScrollReveal } from '../hooks/useScrollReveal.js'
 
 const legalVariants = {
   terms: {
@@ -62,6 +63,8 @@ const legalVariants = {
 function LegalPage({ variant = 'terms' }) {
   const content = legalVariants[variant] ?? legalVariants.terms
 
+  useScrollReveal()
+
   useEffect(() => {
     document.title = `${content.title} | OH Montajes y Eventos`
     const robotsMeta = document.createElement('meta')
@@ -77,21 +80,21 @@ function LegalPage({ variant = 'terms' }) {
 
   return (
     <main className="legal-page">
-      <header className="legal-header">
+      <header className="legal-header" data-reveal>
         <a className="legal-brand" href="/" aria-label="OH Montajes y Eventos, inicio">
           <img src={companyLogo} alt="OH Montajes y Eventos" />
         </a>
         <a className="legal-back" href="/"><ArrowLeft size={16} /> Volver al inicio</a>
       </header>
 
-      <section className="legal-shell" aria-labelledby="legal-title">
+      <section className="legal-shell" aria-labelledby="legal-title" data-reveal>
         <p className="eyebrow legal-eyebrow"><span className="section-index">OH</span> Aviso legal</p>
         <h1 id="legal-title">{content.title}</h1>
         <p className="legal-intro">{content.intro}</p>
 
-        <div className="legal-content">
-          {content.sections.map((section) => (
-            <article key={section.heading} className="legal-card">
+        <div className="legal-content" data-reveal-stagger>
+          {content.sections.map((section, index) => (
+            <article key={section.heading} className="legal-card" data-reveal data-reveal-delay={index * 90}>
               <h2>{section.heading}</h2>
               <p>{section.body}</p>
             </article>
@@ -99,7 +102,7 @@ function LegalPage({ variant = 'terms' }) {
         </div>
       </section>
 
-      <footer className="legal-footer">
+      <footer className="legal-footer" data-reveal>
         <span>OH Montajes y Eventos</span>
         <span>{content.slug === 'terminos-y-condiciones' ? 'Términos y condiciones' : 'Términos de uso'}</span>
       </footer>

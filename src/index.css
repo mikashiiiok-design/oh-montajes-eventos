@@ -1,0 +1,67 @@
+:root {
+  font-family: 'Manrope', sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-optical-sizing: auto;
+  scroll-behavior: smooth;
+  color-scheme: light;
+  --bg: #f5f5f2;
+  --surface: #ecece8;
+  --text: #161615;
+  --muted: #676762;
+  --line: #d6d6d0;
+  --accent: #f45a24;
+  --on-accent: #171411;
+  --inverse: #f5f5f2;
+  background: var(--bg);
+  color: var(--text);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #111110;
+  --surface: #1b1b19;
+  --text: #f1f0ec;
+  --muted: #a3a29b;
+  --line: #343431;
+  --accent: #ff632b;
+  --on-accent: #171411;
+  --inverse: #f5f5f2;
+  background: var(--bg);
+}
+
+* { box-sizing: border-box; }
+html { min-width: 320px; scroll-behavior: smooth; scroll-padding-top: 86px; }
+html.has-page-loader, html.has-page-loader body { overflow: hidden; overscroll-behavior: none; }
+body { min-width: 320px; margin: 0; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.6; transition: background-color 220ms ease, color 220ms ease; }
+body, button, a { font-family: 'Manrope', sans-serif; }
+button, a { -webkit-tap-highlight-color: transparent; }
+a { color: inherit; }
+button { color: inherit; }
+img { display: block; max-width: 100%; }
+h1, h2, h3, p { margin-top: 0; }
+h1, h2, h3 { font-family: 'Space Grotesk', sans-serif; }
+::selection { color: #171411; background: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+
+:root { scrollbar-color: var(--accent) var(--bg); scrollbar-width: thin; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { border: 2px solid var(--bg); border-radius: 8px; background: var(--accent); }
+::-webkit-scrollbar-thumb:hover { filter: brightness(1.12); }
+::-webkit-scrollbar-corner { background: var(--bg); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; }
+}
+
+::view-transition-old(root) { animation: theme-fade-out 360ms ease-in-out both; }
+::view-transition-new(root) { animation: theme-fade-in 360ms ease-in-out both; }
+@keyframes theme-fade-out { to { opacity: 0; } }
+@keyframes theme-fade-in { from { opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 180ms; }
+}

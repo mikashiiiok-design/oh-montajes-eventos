@@ -12,33 +12,54 @@ export const allowedOrigins = new Set(
     .filter(Boolean)],
 )
 
+function normalizeHost(hostname) {
+  return String(hostname ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/^\[|\]$/g, '')
+    .replace(/\.$/, '')
+}
+
+export function isAllowedHost(hostname) {
+  const host = normalizeHost(hostname)
+  if (!host) return false
+
+  const trustedHosts = new Set([
+    'localhost',
+    '127.0.0.1',
+    '::1',
+    '[::1]',
+    'chidalgodev.xyz',
+    'www.chidalgodev.xyz',
+    'oh-montajes-eventos.pages.dev',
+    'www.oh-montajes-eventos.pages.dev',
+  ])
+
+  if (trustedHosts.has(host) || host.endsWith('.chidalgodev.xyz') || host.endsWith('.pages.dev')) return true
+  if (host.endsWith('.localhost')) return true
+
+  const privateIpPattern = /^(10\.|127\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.)/
+  if (privateIpPattern.test(host)) return true
+
+  return false
+}
+
 export function isAllowedOrigin(origin) {
   if (!origin) return true
 
   try {
     const { hostname, origin: normalizedOrigin, protocol } = new URL(origin)
-    const host = hostname.toLowerCase()
+    const host = normalizeHost(hostname)
 
     if (allowedOrigins.has(normalizedOrigin)) return true
-
-    const trustedHosts = new Set([
-      'localhost',
-      '127.0.0.1',
-      '[::1]',
-      'chidalgodev.xyz',
-      'www.chidalgodev.xyz',
-      'oh-montajes-eventos.pages.dev',
-      'www.oh-montajes-eventos.pages.dev',
-    ])
+    if (isAllowedHost(host)) return true
 
     if (host.endsWith('.chidalgodev.xyz') || host.endsWith('.pages.dev')) {
       return protocol === 'https:'
     }
 
-    if (trustedHosts.has(host)) return true
-
     if (process.env.NODE_ENV === 'production') return false
-    return protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(host)
+    return protocol === 'http:' && ['localhost', '127.0.0.1', '::1', '[::1]'].includes(host)
   } catch {
     return false
   }

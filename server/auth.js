@@ -3,7 +3,7 @@ import { promisify } from 'node:util'
 import express from 'express'
 import { rateLimit } from 'express-rate-limit'
 import { pool } from './db.js'
-import { isAllowedOrigin } from './security.js'
+import { isAllowedHost, isAllowedOrigin } from './security.js'
 import { accountRoleById, defaultAccountRole } from '../shared/roles.js'
 
 const router = express.Router()
@@ -33,11 +33,22 @@ router.use((_request, response, next) => {
   next()
 })
 
-function verifyOrigin(request, response, next) {
+export function verifyOrigin(request, response, next) {
   const origin = request.get('origin')
-  if (!origin || !isAllowedOrigin(origin)) {
+  const host = request.get('host') ?? request.get('x-forwarded-host') ?? ''
+
+  if (origin && !isAllowedOrigin(origin)) {
     return response.status(403).json({ error: 'Origen de solicitud no permitido.' })
   }
+
+  if (!origin && host && isAllowedHost(host)) {
+    return next()
+  }
+
+  if (!origin) {
+    return response.status(403).json({ error: 'Origen de solicitud no permitido.' })
+  }
+
   return next()
 }
 

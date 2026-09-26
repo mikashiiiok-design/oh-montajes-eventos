@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowLeft, ArrowUpRight, LogOut, UserCog, UserRound, X } from 'lucide-react'
+import { ArrowLeft, ArrowUpRight, LogOut, UserRound, X } from 'lucide-react'
 import companyLogo from '../assets/LOGO-OH.webp'
 import AccountRoleBadge from './AccountRoleBadge.jsx'
 import { apiRequest } from '../utils/api.js'
@@ -21,13 +21,11 @@ function AccountPage() {
   const [developmentPanel, setDevelopmentPanel] = useState('')
   const developmentDialogRef = useRef(null)
 
-  const panelItems = [
-    { id: 'admin', label: 'Administración', enabled: account?.role === 'owner' },
-    { id: 'attendance', label: 'Lista de asistencia', enabled: false },
-    { id: 'furniture', label: 'Mobiliario', enabled: false },
-    { id: 'orders', label: 'Registro de pedidos', enabled: false },
-    { id: 'chats', label: 'Chats', enabled: false },
-  ]
+  const panelItems = account && account.role === 'owner'
+    ? [{ id: 'admin', label: 'Administración', enabled: true }]
+    : []
+
+  const visiblePanels = panelItems.filter((panel) => panel.enabled)
 
   useEffect(() => {
     const previousTitle = document.title
@@ -65,13 +63,22 @@ function AccountPage() {
 
     refreshSession()
 
+    const handleFocus = () => {
+      if (isActive) refreshSession()
+    }
+
     const unsubscribe = subscribeToAccountSync(() => {
       if (isActive) refreshSession()
     })
 
+    window.addEventListener('focus', handleFocus)
+    window.addEventListener('pageshow', handleFocus)
+
     return () => {
       isActive = false
       unsubscribe()
+      window.removeEventListener('focus', handleFocus)
+      window.removeEventListener('pageshow', handleFocus)
     }
   }, [])
 
@@ -156,36 +163,38 @@ function AccountPage() {
               <AccountRoleBadge role={account.role} />
               {notice && <p className="account-notice" role="status">{notice}</p>}
 
-              <div className="account-panel-group" aria-labelledby="account-panels-title">
-                <div className="account-panel-header">
-                  <p className="account-kicker">Paneles</p>
-                  <h3 id="account-panels-title">Tu espacio de trabajo</h3>
-                </div>
-                <div className="account-panel-list">
-                  {panelItems.map((panel) => (
-                    <button
-                      key={panel.id}
-                      type="button"
-                      className={`account-panel-item${panel.enabled ? ' is-enabled' : ' is-disabled'}`}
-                      disabled={!panel.enabled}
-                      onClick={() => {
-                        if (panel.enabled) {
-                          if (panel.id === 'admin') {
-                            window.location.assign('/cuenta/administracion')
+              {visiblePanels.length > 0 && (
+                <div className="account-panel-group" aria-labelledby="account-panels-title">
+                  <div className="account-panel-header">
+                    <p className="account-kicker">Paneles</p>
+                    <h3 id="account-panels-title">Tu espacio de trabajo</h3>
+                  </div>
+                  <div className="account-panel-list">
+                    {panelItems.map((panel) => (
+                      <button
+                        key={panel.id}
+                        type="button"
+                        className={`account-panel-item${panel.enabled ? ' is-enabled' : ' is-disabled'}`}
+                        disabled={!panel.enabled}
+                        onClick={() => {
+                          if (panel.enabled) {
+                            if (panel.id === 'admin') {
+                              window.location.assign('/cuenta/administracion')
+                              return
+                            }
+                            openDevelopmentModal(panel.label)
                             return
                           }
                           openDevelopmentModal(panel.label)
-                          return
-                        }
-                        openDevelopmentModal(panel.label)
-                      }}
-                    >
-                      <span className="account-panel-name">{panel.label}</span>
-                      {!panel.enabled && <span className="account-panel-state">En desarrollo</span>}
-                    </button>
-                  ))}
+                        }}
+                      >
+                        <span className="account-panel-name">{panel.label}</span>
+                        {!panel.enabled && <span className="account-panel-state">En desarrollo</span>}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="account-next-step">
                 <p className="account-kicker">Siguiente paso</p>

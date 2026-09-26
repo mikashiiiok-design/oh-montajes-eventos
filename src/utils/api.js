@@ -1,7 +1,4 @@
-const API_BASE_URL = (
-  import.meta.env.VITE_API_URL ??
-  (import.meta.env.PROD ? 'https://oh-api-test.onrender.com' : '')
-).replace(/\/$/, '')
+const API_BASE_URL = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '')
 
 export async function apiRequest(path, options = {}) {
   if (!path.startsWith('/api/')) {

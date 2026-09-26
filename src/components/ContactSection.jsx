@@ -15,7 +15,7 @@ function ContactSection() {
           <a href="mailto:ayuda@ohmontajesyeventos.com"><Mail size={18} /> ayuda@ohmontajesyeventos.com</a>
           <a href="tel:+3135975526"><Phone size={18} /> +313 597 5526</a>
           <span><MapPin size={18} /> Medellín · En toda Colombia</span>
-          <a className="contact-cta" href="mailto:ayuda@ohmontajesyeventos.com?subject=Hablemos%20de%20un%20evento">Empezar una conversación <ArrowUpRight size={17} /></a>
+          <a className="contact-cta" href="/cuenta?modo=registro">Registrarme o iniciar sesión <ArrowUpRight size={17} /></a>
         </div>
         <img className="contact-watermark" src={companyLogo} alt="" aria-hidden="true" />
       </div>

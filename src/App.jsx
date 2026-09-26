@@ -9,6 +9,7 @@ import ContactSection from './components/ContactSection.jsx'
 import SiteFooter from './components/SiteFooter.jsx'
 import PageLoader from './components/PageLoader.jsx'
 import ErrorPage from './components/ErrorPage.jsx'
+import AccountPage from './components/AccountPage.jsx'
 import { useScrollReveal } from './hooks/useScrollReveal.js'
 import { useSmoothAnchorNavigation } from './hooks/useSmoothAnchorNavigation.js'
 import './portfolio.css'
@@ -69,6 +70,7 @@ function App() {
   }, [isReservedErrorPath])
 
   if (isReservedErrorPath) return <PortfolioApp />
+  if (pathname === '/cuenta') return <AccountPage />
   if (pathname === '/galeria') return <ErrorPage statusCode={503} />
   if (pathname !== '/' && pathname !== '/index.html') return <ErrorPage statusCode={404} />
 

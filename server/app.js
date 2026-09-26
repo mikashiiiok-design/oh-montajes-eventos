@@ -3,6 +3,7 @@ import cors from 'cors'
 import express from 'express'
 import helmet from 'helmet'
 import { pool } from './db.js'
+import authRouter from './auth.js'
 
 const app = express()
 const allowedOrigins = new Set(
@@ -18,6 +19,7 @@ app.use(cors({
   credentials: true,
 }))
 app.use(express.json({ limit: '1mb' }))
+app.use('/api/auth', authRouter)
 
 app.get('/api/health', async (_request, response) => {
   try {

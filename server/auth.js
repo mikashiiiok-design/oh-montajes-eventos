@@ -3,17 +3,12 @@ import { promisify } from 'node:util'
 import express from 'express'
 import { rateLimit } from 'express-rate-limit'
 import { pool } from './db.js'
+import { isAllowedOrigin } from './security.js'
 
 const router = express.Router()
 const scrypt = promisify(scryptCallback)
 const cookieName = 'oh_session'
 const sessionDurationSeconds = 60 * 60 * 24 * 7
-const allowedOrigins = new Set(
-  (process.env.WEB_ORIGINS ?? process.env.WEB_ORIGIN ?? 'http://localhost:5173')
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean),
-)
 const authRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 10,
@@ -29,7 +24,7 @@ router.use((_request, response, next) => {
 
 function verifyOrigin(request, response, next) {
   const origin = request.get('origin')
-  if (!origin || !allowedOrigins.has(origin)) {
+  if (!origin || !isAllowedOrigin(origin)) {
     return response.status(403).json({ error: 'Origen de solicitud no permitido.' })
   }
   return next()

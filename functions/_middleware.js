@@ -4,7 +4,7 @@ const contentSecurityPolicy = [
   "object-src 'none'",
   "frame-ancestors 'none'",
   "form-action 'self'",
-  "img-src 'self' data:",
+  "img-src 'self' data: https://images.unsplash.com",
   "font-src 'self' https://fonts.gstatic.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "script-src 'self' 'unsafe-inline'",

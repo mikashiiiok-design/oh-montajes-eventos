@@ -5,19 +5,14 @@ import helmet from 'helmet'
 import { rateLimit } from 'express-rate-limit'
 import { pool } from './db.js'
 import authRouter from './auth.js'
+import { isAllowedOrigin } from './security.js'
 
 const app = express()
 app.set('trust proxy', 1)
-const allowedOrigins = new Set(
-  (process.env.WEB_ORIGINS ?? process.env.WEB_ORIGIN ?? 'http://localhost:5173')
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean),
-)
 
 app.use(helmet())
 app.use(cors({
-  origin: (origin, callback) => callback(null, !origin || allowedOrigins.has(origin)),
+  origin: (origin, callback) => callback(null, isAllowedOrigin(origin)),
   credentials: true,
 }))
 app.use('/api', rateLimit({

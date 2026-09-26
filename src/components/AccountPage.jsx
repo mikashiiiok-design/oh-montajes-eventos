@@ -253,14 +253,6 @@ function AccountPage() {
                     <input autoComplete="name" maxLength={100} minLength={2} name="name" required />
                   </label>
                 )}
-                {mode === 'register' && (
-                  <label className="account-legal-check">
-                    <input name="acceptTerms" type="checkbox" required />
-                    <span>
-                      Acepto los <a href="/terminos-y-condiciones" target="_blank" rel="noreferrer">Términos y condiciones</a> y los <a href="/terminos-de-servicio" target="_blank" rel="noreferrer">Términos de uso</a>.
-                    </span>
-                  </label>
-                )}
                 <label>
                   Correo electrónico
                   <input autoComplete="email" maxLength={254} name="email" required type="email" />
@@ -277,6 +269,14 @@ function AccountPage() {
                   />
                   {mode === 'register' && <span className="account-hint">Mínimo 12 caracteres.</span>}
                 </label>
+                {mode === 'register' && (
+                  <label className="account-legal-check">
+                    <input name="acceptTerms" type="checkbox" required />
+                    <span>
+                      Acepto los <a href="/terminos-y-condiciones" target="_blank" rel="noreferrer">Términos y condiciones</a> y los <a href="/terminos-de-servicio" target="_blank" rel="noreferrer">Términos de uso</a>.
+                    </span>
+                  </label>
+                )}
                 {error && <p className="account-error" role="alert">{error}</p>}
                 {notice && <p className="account-notice" role="status">{notice}</p>}
                 <button className="account-submit" disabled={isSubmitting} type="submit">

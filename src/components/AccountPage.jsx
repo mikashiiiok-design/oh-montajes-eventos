@@ -187,11 +187,6 @@ function AccountPage() {
                 </div>
               </div>
 
-              {account.role === 'owner' && (
-                <a className="account-admin-link" href="/cuenta/administracion">
-                  <UserCog size={16} /> Administrar cuentas
-                </a>
-              )}
               <div className="account-next-step">
                 <p className="account-kicker">Siguiente paso</p>
                 <h3>Preparar un pedido</h3>

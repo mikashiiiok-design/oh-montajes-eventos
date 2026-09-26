@@ -14,7 +14,10 @@ function SiteFooter() {
       </div>
       <div className="page-shell footer-bottom">
         <span>Made with ❤ by Carlos Hidalgo</span>
-        <span>Producción con intención.</span>
+        <div className="footer-legal-links">
+          <a href="/terminos-y-condiciones">Términos y condiciones</a>
+          <a href="/terminos-de-servicio">Términos de uso</a>
+        </div>
         <span>Medellín, Colombia</span>
         <a className="footer-contact" href="#contacto">Contacto <ArrowUpRight size={14} /></a>
       </div>

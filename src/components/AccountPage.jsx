@@ -98,7 +98,15 @@ function AccountPage() {
       email: formData.get('email'),
       password: formData.get('password'),
     }
-    if (mode === 'register') payload.name = formData.get('name')
+    if (mode === 'register') {
+      payload.name = formData.get('name')
+      payload.acceptTerms = formData.get('acceptTerms') === 'on'
+      if (!payload.acceptTerms) {
+        setError('Debes aceptar los Términos y condiciones y los Términos de uso para continuar.')
+        setIsSubmitting(false)
+        return
+      }
+    }
 
     try {
       const result = await apiRequest(`/api/auth/${mode}`, {
@@ -243,6 +251,14 @@ function AccountPage() {
                   <label>
                     Nombre completo
                     <input autoComplete="name" maxLength={100} minLength={2} name="name" required />
+                  </label>
+                )}
+                {mode === 'register' && (
+                  <label className="account-legal-check">
+                    <input name="acceptTerms" type="checkbox" required />
+                    <span>
+                      Acepto los <a href="/terminos-y-condiciones" target="_blank" rel="noreferrer">Términos y condiciones</a> y los <a href="/terminos-de-servicio" target="_blank" rel="noreferrer">Términos de uso</a>.
+                    </span>
                   </label>
                 )}
                 <label>

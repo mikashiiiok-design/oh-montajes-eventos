@@ -22,6 +22,9 @@
 .account-form label { display: grid; gap: 7px; font-size: 11px; font-weight: 800; }
 .account-form input { width: 100%; min-height: 48px; padding: 0 13px; border: 1px solid var(--line); border-radius: 0; background: var(--bg); color: var(--text); font: inherit; font-size: 14px; }
 .account-form input:focus { border-color: var(--text); outline: 2px solid transparent; }
+.account-legal-check { display: flex !important; align-items: flex-start; gap: 10px; font-size: 10px !important; line-height: 1.6; }
+.account-legal-check input { width: 16px; min-width: 16px; height: 16px; min-height: 16px; margin-top: 2px; accent-color: var(--accent); }
+.account-legal-check a { color: var(--text); text-decoration: underline; }
 .account-hint { color: var(--muted); font-size: 10px; font-weight: 500; }
 .account-submit { display: inline-flex; min-height: 49px; align-items: center; justify-content: space-between; gap: 20px; margin-top: 5px; padding: 0 15px; border: 0; background: var(--text); color: var(--bg); cursor: pointer; font-size: 12px; font-weight: 800; }
 .account-submit:hover:not(:disabled) { background: var(--accent); color: var(--on-accent); }

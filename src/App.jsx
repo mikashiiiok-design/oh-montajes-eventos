@@ -12,6 +12,7 @@ import ErrorPage from './components/ErrorPage.jsx'
 import AccountPage from './components/AccountPage.jsx'
 import AccountAdminPage from './components/AccountAdminPage.jsx'
 import GalleryPage from './components/GalleryPage.jsx'
+import LegalPage from './components/LegalPage.jsx'
 import { useScrollReveal } from './hooks/useScrollReveal.js'
 import { useSmoothAnchorNavigation } from './hooks/useSmoothAnchorNavigation.js'
 import './portfolio.css'
@@ -73,6 +74,8 @@ function App() {
   if (pathname === '/500') return <><PageLoader /><ErrorPage statusCode={500} /></>
   if (pathname === '/cuenta/administracion') return <><PageLoader /><AccountAdminPage /></>
   if (pathname === '/cuenta') return <><PageLoader /><AccountPage /></>
+  if (pathname === '/terminos-y-condiciones') return <><PageLoader /><LegalPage variant="terms" /></>
+  if (pathname === '/terminos-de-servicio') return <><PageLoader /><LegalPage variant="service" /></>
   if (pathname === '/galeria') return <><PageLoader /><PortfolioApp pageContent={<GalleryPage />} /></>
   if (pathname !== '/' && pathname !== '/index.html') return <><PageLoader /><ErrorPage statusCode={404} /></>
 

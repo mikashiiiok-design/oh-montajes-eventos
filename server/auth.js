@@ -140,9 +140,13 @@ router.post('/register', verifyOrigin, authRateLimit, async (request, response) 
   const name = typeof request.body.name === 'string' ? request.body.name.trim() : ''
   const email = typeof request.body.email === 'string' ? request.body.email.trim().toLowerCase() : ''
   const password = typeof request.body.password === 'string' ? request.body.password : ''
+  const acceptTerms = request.body.acceptTerms === true
 
   if (name.length < 2 || name.length > 100) {
     return response.status(400).json({ error: 'Escribe tu nombre (de 2 a 100 caracteres).' })
+  }
+  if (!acceptTerms) {
+    return response.status(400).json({ error: 'Debes aceptar los Términos y condiciones y los Términos de uso para registrarte.' })
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
     return response.status(400).json({ error: 'Escribe un correo electrónico válido.' })

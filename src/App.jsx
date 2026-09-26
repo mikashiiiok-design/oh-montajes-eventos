@@ -10,6 +10,7 @@ import SiteFooter from './components/SiteFooter.jsx'
 import PageLoader from './components/PageLoader.jsx'
 import ErrorPage from './components/ErrorPage.jsx'
 import AccountPage from './components/AccountPage.jsx'
+import AccountAdminPage from './components/AccountAdminPage.jsx'
 import GalleryPage from './components/GalleryPage.jsx'
 import { useScrollReveal } from './hooks/useScrollReveal.js'
 import { useSmoothAnchorNavigation } from './hooks/useSmoothAnchorNavigation.js'
@@ -75,6 +76,7 @@ function App() {
   }, [isReservedErrorPath])
 
   if (isReservedErrorPath) return <PortfolioApp />
+  if (pathname === '/cuenta/administracion') return <AccountAdminPage />
   if (pathname === '/cuenta') return <AccountPage />
   if (pathname === '/galeria') return <PortfolioApp pageContent={<GalleryPage />} />
   if (pathname !== '/' && pathname !== '/index.html') return <ErrorPage statusCode={404} />

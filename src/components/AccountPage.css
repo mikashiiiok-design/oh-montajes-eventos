@@ -48,6 +48,8 @@
 .account-role-level { color: var(--muted); font-size: 9px; font-weight: 700; }
 .account-role-tags { display: flex; flex-wrap: wrap; gap: 5px; }
 .account-role-tags span { padding: 3px 7px; border: 1px solid var(--line); color: var(--muted); font-size: 9px; line-height: 1.4; }
+.account-admin-link { display: inline-flex; min-height: 39px; align-items: center; gap: 8px; margin: 0 0 8px; padding: 0 11px; border: 1px solid var(--line); color: var(--text); font-size: 10px; font-weight: 800; text-decoration: none; transition: border-color 160ms ease, color 160ms ease; }
+.account-admin-link:hover { border-color: var(--accent); color: var(--accent); }
 .account-next-step { width: 100%; margin: 19px 0 22px; padding-top: 18px; border-top: 1px solid var(--line); }
 .account-next-step h3 { margin: 0 0 8px; font-size: 20px; font-weight: 600; }
 .account-next-step > p:last-child { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.7; }

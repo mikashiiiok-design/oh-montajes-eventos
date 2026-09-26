@@ -1,0 +1,109 @@
+.account-admin-page { min-height: 100svh; padding: 0 0 80px; background: var(--bg); color: var(--text); }
+.account-admin-topbar { display: flex; min-height: 78px; align-items: center; justify-content: space-between; padding: 0 max(24px, calc((100vw - 1320px) / 2)); border-bottom: 1px solid var(--line); }
+.account-admin-back { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 11px; font-weight: 800; text-decoration: none; }
+.account-admin-back:hover { color: var(--text); }
+.account-admin-brand { color: var(--muted); font-size: 9px; font-weight: 800; }
+.account-admin-content { width: min(1120px, calc(100% - 64px)); margin: 0 auto; }
+.account-admin-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; padding: 64px 0 36px; border-bottom: 1px solid var(--line); }
+.account-admin-eyebrow { display: flex; align-items: center; gap: 10px; margin: 0 0 10px; color: var(--muted); font-size: 9px; font-weight: 800; text-transform: uppercase; }
+.account-admin-eyebrow span { color: var(--accent); }
+.account-admin-heading h1 { margin: 0; font-size: 42px; font-weight: 600; line-height: 1.05; }
+.account-admin-heading > div > p:last-child { margin: 12px 0 0; color: var(--muted); font-size: 11px; }
+.account-admin-owner { display: inline-flex; min-height: 31px; align-items: center; gap: 7px; padding: 0 9px; border: 1px solid var(--line); color: var(--accent); font-size: 9px; font-weight: 800; }
+.account-admin-notice, .account-admin-error { margin: 18px 0 0; padding: 10px 12px; font-size: 11px; line-height: 1.5; }
+.account-admin-notice { border-left: 2px solid #38855e; background: var(--surface); color: var(--text); }
+.account-admin-error { border-left: 2px solid #b3261e; background: var(--surface); color: #b3261e; }
+.account-admin-directory, .account-admin-audit { padding-top: 36px; }
+.account-admin-section-heading { display: flex; align-items: end; justify-content: space-between; gap: 15px; margin-bottom: 18px; }
+.account-admin-section-heading .account-admin-eyebrow { margin-bottom: 6px; }
+.account-admin-section-heading h2 { margin: 0; font-size: 23px; font-weight: 600; }
+.account-admin-count { padding-bottom: 3px; color: var(--muted); font-size: 9px; }
+.account-admin-search { display: flex; min-height: 46px; align-items: center; gap: 10px; padding: 0 12px; border: 1px solid var(--line); background: var(--bg); color: var(--muted); }
+.account-admin-search:focus-within { border-color: var(--accent); }
+.account-admin-search input { width: 100%; min-width: 0; height: 44px; border: 0; outline: 0; background: transparent; color: var(--text); font: inherit; font-size: 11px; }
+.account-admin-search input::placeholder { color: var(--muted); }
+.account-admin-search > button { display: grid; width: 30px; height: 30px; flex: 0 0 auto; place-items: center; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
+.account-admin-list { display: grid; margin-top: 10px; border-top: 1px solid var(--line); }
+.account-admin-row { display: grid; grid-template-columns: minmax(190px, 1.1fr) minmax(230px, .9fr) auto; align-items: center; gap: 18px; padding: 17px 0; border-bottom: 1px solid var(--line); animation: account-admin-row-in 280ms ease both; }
+.account-admin-row:nth-child(2) { animation-delay: 35ms; }
+.account-admin-row:nth-child(3) { animation-delay: 70ms; }
+.account-admin-row.is-banned { opacity: .72; }
+.account-admin-person { min-width: 0; }
+.account-admin-id { color: var(--accent); font-size: 9px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.account-admin-person h3 { overflow: hidden; margin: 3px 0 1px; font-size: 13px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.account-admin-person > p { overflow: hidden; margin: 0; color: var(--muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.account-admin-person .account-admin-suspended { display: block; margin-top: 5px; color: #b3261e; font-size: 9px; line-height: 1.4; }
+.account-admin-row .account-role-group { gap: 5px; margin: 0; }
+.account-admin-row .account-role-badge { min-height: 27px; padding: 0 8px; font-size: 9px; }
+.account-admin-row .account-role-tags { gap: 4px; }
+.account-admin-row .account-role-tags span { padding: 2px 5px; font-size: 8px; }
+.account-admin-actions { display: flex; justify-content: flex-end; gap: 6px; }
+.account-admin-actions button { display: inline-flex; min-height: 34px; align-items: center; gap: 6px; padding: 0 8px; border: 1px solid var(--line); background: transparent; color: var(--text); font-size: 9px; font-weight: 800; cursor: pointer; }
+.account-admin-actions button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.account-admin-actions .account-admin-ban { color: #a43b32; }
+.account-admin-actions button:disabled { cursor: not-allowed; opacity: .45; }
+.account-admin-empty, .account-admin-loading { margin: 0; padding: 24px 0; color: var(--muted); font-size: 11px; }
+.account-admin-audit { border-top: 1px solid var(--line); margin-top: 38px; }
+.account-admin-audit-list { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
+.account-admin-audit-list li { display: flex; gap: 12px; padding: 13px 0; border-top: 1px solid var(--line); }
+.account-admin-audit-mark { width: 7px; height: 7px; flex: 0 0 auto; margin-top: 6px; border-radius: 50%; background: var(--accent); }
+.account-admin-audit-list p { margin: 0 0 4px; font-size: 10px; line-height: 1.5; }
+.account-admin-audit-list p strong { font-weight: 800; }
+.account-admin-audit-list li > div > span { color: var(--muted); font-size: 9px; }
+.account-admin-state { display: grid; min-height: 70svh; align-content: center; justify-items: center; padding: 24px; text-align: center; }
+.account-admin-state > svg { margin-bottom: 15px; color: var(--accent); }
+.account-admin-state h1 { margin: 0 0 8px; font-size: 26px; }
+.account-admin-state p { max-width: 380px; margin: 0 0 18px; color: var(--muted); font-size: 11px; line-height: 1.6; }
+.account-admin-state a { display: inline-flex; min-height: 40px; align-items: center; padding: 0 13px; background: var(--text); color: var(--bg); font-size: 10px; font-weight: 800; text-decoration: none; }
+.account-admin-dialog { width: min(480px, calc(100% - 32px)); max-width: none; padding: 24px; border: 1px solid var(--line); background: var(--bg); color: var(--text); box-shadow: 0 24px 76px rgba(0,0,0,.25); }
+.account-admin-dialog::backdrop { background: rgba(15,15,14,.56); animation: account-admin-backdrop-in 160ms ease both; }
+.account-admin-dialog[open] { animation: account-admin-dialog-in 200ms cubic-bezier(.2,.8,.2,1) both; }
+.account-admin-dialog.is-closing { animation: account-admin-dialog-out 180ms cubic-bezier(.2,.8,.2,1) both; }
+.account-admin-dialog form { display: grid; gap: 18px; }
+.account-admin-dialog-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 15px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+.account-admin-dialog-head .account-admin-eyebrow { margin-bottom: 7px; }
+.account-admin-dialog-head h2 { margin: 0; font-size: 23px; }
+.account-admin-dialog-head p:last-child { margin: 6px 0 0; color: var(--muted); font-size: 10px; }
+.account-admin-icon-button { display: grid; width: 36px; height: 36px; flex: 0 0 auto; place-items: center; border: 1px solid var(--line); background: transparent; color: var(--text); cursor: pointer; }
+.account-admin-field { display: grid; gap: 7px; font-size: 10px; font-weight: 800; }
+.account-admin-field select, .account-admin-field textarea { width: 100%; min-height: 43px; padding: 9px 11px; border: 1px solid var(--line); background: var(--bg); color: var(--text); font: inherit; font-size: 11px; }
+.account-admin-field textarea { min-height: 98px; resize: vertical; }
+.account-admin-field small { color: var(--muted); font-size: 9px; font-weight: 500; }
+.account-admin-restore-copy { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.6; }
+.account-admin-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; padding-top: 4px; }
+.account-admin-dialog-actions button { min-height: 39px; padding: 0 12px; border: 1px solid var(--line); background: transparent; color: var(--text); font-size: 9px; font-weight: 800; cursor: pointer; }
+.account-admin-dialog-actions .account-admin-confirm { border-color: var(--text); background: var(--text); color: var(--bg); }
+.account-admin-dialog-actions .account-admin-confirm.is-danger { border-color: #a43b32; background: #a43b32; color: #fff; }
+.account-admin-dialog-actions button:disabled { cursor: wait; opacity: .6; }
+@keyframes account-admin-row-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes account-admin-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes account-admin-dialog-in { from { opacity: 0; transform: translateY(9px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes account-admin-dialog-out { from { opacity: 1; transform: translateY(0) scale(1); } to { opacity: 0; transform: translateY(9px) scale(.98); } }
+
+@media (max-width: 760px) {
+	.account-admin-topbar { min-height: 70px; padding: 0 20px; }
+	.account-admin-content { width: calc(100% - 40px); }
+	.account-admin-heading { padding: 42px 0 26px; }
+	.account-admin-heading h1 { font-size: 34px; }
+	.account-admin-row { grid-template-columns: minmax(0, 1fr) auto; gap: 12px; }
+	.account-admin-row > .account-role-group { grid-column: 1 / -1; grid-row: 2; }
+	.account-admin-actions { grid-column: 1 / -1; justify-content: flex-start; }
+}
+
+@media (max-width: 420px) {
+	.account-admin-content { width: calc(100% - 32px); }
+	.account-admin-topbar { padding: 0 16px; }
+	.account-admin-heading { flex-direction: column; gap: 15px; }
+	.account-admin-heading h1 { font-size: 30px; }
+	.account-admin-section-heading { align-items: flex-start; flex-direction: column; }
+	.account-admin-row { grid-template-columns: 1fr; }
+	.account-admin-row > .account-role-group, .account-admin-actions { grid-column: 1; }
+	.account-admin-row > .account-role-group { grid-row: auto; }
+	.account-admin-actions { flex-wrap: wrap; }
+	.account-admin-actions button { flex: 1 1 auto; justify-content: center; }
+	.account-admin-dialog { padding: 19px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.account-admin-row, .account-admin-dialog[open], .account-admin-dialog.is-closing, .account-admin-dialog::backdrop { animation: none; }
+}

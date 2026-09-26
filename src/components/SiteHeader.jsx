@@ -13,6 +13,7 @@ const navItems = [
 
 function SiteHeader({ theme, onToggleTheme }) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const isHomePage = window.location.pathname === '/' || window.location.pathname === '/index.html'
   const [account, setAccount] = useState(null)
   const [accountMenuOpen, setAccountMenuOpen] = useState(false)
   const [accountMenuError, setAccountMenuError] = useState('')
@@ -79,14 +80,15 @@ function SiteHeader({ theme, onToggleTheme }) {
   return (
     <header className="site-header">
       <div className="header-inner">
-        <a className="brand" href="#inicio" onClick={scrollToTop} aria-label="OH Montajes y Eventos, inicio">
+        <a className="brand" href={isHomePage ? '#inicio' : '/'} onClick={isHomePage ? scrollToTop : undefined} aria-label="OH Montajes y Eventos, inicio">
           <img className="brand-logo" src={companyLogo} alt="" />
         </a>
         <nav className={`main-nav${menuOpen ? ' is-open' : ''}`} aria-label="Navegación principal">
-          {navItems.map((item) => (
-            <a key={item.href} href={item.href} onClick={() => setMenuOpen(false)}>{item.label}</a>
-          ))}
-          <a className="nav-contact" href="#contacto" onClick={() => setMenuOpen(false)}>
+          {navItems.map((item) => {
+            const href = item.href.startsWith('#') && !isHomePage ? `/${item.href}` : item.href
+            return <a key={item.href} href={href} onClick={() => setMenuOpen(false)}>{item.label}</a>
+          })}
+          <a className="nav-contact" href={isHomePage ? '#contacto' : '/#contacto'} onClick={() => setMenuOpen(false)}>
             Hablemos <ArrowUpRight size={15} strokeWidth={1.8} />
           </a>
         </nav>

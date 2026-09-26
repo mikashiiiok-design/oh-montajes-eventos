@@ -23,11 +23,11 @@
 .gallery-category-arrow { position: absolute; right: 18px; bottom: 19px; color: var(--accent); }
 .gallery-back-button { display: inline-flex; min-height: 38px; align-items: center; gap: 8px; padding: 0 12px; border: 1px solid var(--line); background: transparent; color: var(--text); font-size: 10px; font-weight: 800; cursor: pointer; }
 .gallery-back-button:hover { border-color: var(--accent); }
-.gallery-catalog { scroll-margin-top: 100px; }
+.gallery-catalog { scroll-margin-top: 100px; animation: gallery-catalog-enter 520ms cubic-bezier(.2,.7,.2,1) both; }
 .gallery-catalog-description { margin: 10px 0 0; color: var(--muted); font-size: 12px; }
 .gallery-result-count { padding-bottom: 5px; color: var(--muted); font-size: 10px; }
 .gallery-product-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
-.gallery-product { min-width: 0; border: 1px solid var(--line); background: var(--bg); }
+.gallery-product { min-width: 0; border: 1px solid var(--line); background: var(--bg); animation: gallery-product-enter 520ms cubic-bezier(.2,.7,.2,1) both; animation-delay: calc(var(--gallery-index, 0) * 65ms); }
 .gallery-product-image { position: relative; aspect-ratio: 1.55; overflow: hidden; background: var(--surface); }
 .gallery-product-image img { width: 100%; height: 100%; object-fit: cover; }
 .gallery-product-image > span { position: absolute; right: 12px; bottom: 11px; padding: 4px 7px; background: rgba(17,17,16,.8); color: #fff; font-size: 9px; font-variant-numeric: tabular-nums; }
@@ -48,6 +48,8 @@
 .gallery-order-bar b { display: grid; width: 19px; height: 19px; place-items: center; border-radius: 50%; background: var(--on-accent); color: var(--accent); font-size: 9px; }
 .gallery-order-dialog { position: fixed; inset: 0 0 0 auto; width: min(470px, 100%); height: 100dvh; max-width: none; max-height: none; margin: 0; padding: 0; overflow: visible; border: 0; background: transparent; color: var(--text); animation: gallery-drawer-in 220ms cubic-bezier(.2,.8,.2,1) both; }
 .gallery-order-dialog::backdrop { background: rgba(15,15,14,.48); animation: gallery-overlay-in 160ms ease both; }
+.gallery-order-dialog.is-closing { animation: gallery-drawer-out 220ms cubic-bezier(.2,.8,.2,1) both; }
+.gallery-order-dialog.is-closing::backdrop { animation: gallery-overlay-out 220ms ease both; }
 .gallery-order-drawer { display: flex; width: 100%; height: 100%; flex-direction: column; padding: 27px 25px 22px; background: var(--bg); box-shadow: -12px 0 40px rgba(0,0,0,.17); }
 .gallery-order-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 15px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
 .gallery-order-header .gallery-eyebrow { margin-bottom: 7px; }
@@ -71,7 +73,9 @@
 .gallery-order-total > span { font-size: 12px; font-weight: 800; }
 .gallery-order-total > strong { font-size: 17px; font-variant-numeric: tabular-nums; }
 .gallery-order-total > small { grid-column: 1 / -1; color: var(--muted); font-size: 9px; }
-.gallery-quote-button { display: flex; min-height: 48px; align-items: center; justify-content: space-between; gap: 10px; padding: 0 15px; background: var(--text); color: var(--bg); font-size: 11px; font-weight: 800; text-decoration: none; }
+.gallery-quote-button { display: flex; width: 100%; min-height: 48px; align-items: center; justify-content: space-between; gap: 10px; padding: 0 15px; border: 0; background: var(--text); color: var(--bg); font-size: 11px; font-weight: 800; text-align: left; text-decoration: none; cursor: pointer; }
+.gallery-quote-button:disabled { cursor: wait; opacity: .65; }
+.gallery-quote-error { margin: 0; color: #b3261e; font-size: 10px; line-height: 1.5; }
 .gallery-order-disclaimer { margin: 11px 0 0; color: var(--muted); font-size: 9px; text-align: center; }
 .gallery-order-empty { display: grid; flex: 1; align-content: center; justify-items: center; padding: 25px; text-align: center; }
 .gallery-order-empty > svg { color: var(--accent); }
@@ -81,6 +85,7 @@
 .gallery-quantity-dialog { width: min(430px, calc(100% - 32px)); max-width: none; padding: 23px; border: 1px solid var(--line); background: var(--bg); color: var(--text); box-shadow: 0 22px 70px rgba(0,0,0,.24); }
 .gallery-quantity-dialog::backdrop { background: rgba(15,15,14,.55); }
 .gallery-quantity-dialog[open] { animation: gallery-dialog-in 180ms cubic-bezier(.2,.8,.2,1) both; }
+.gallery-quantity-dialog.is-closing { animation: gallery-dialog-out 180ms cubic-bezier(.2,.8,.2,1) both; }
 .gallery-quantity-dialog form { display: grid; gap: 15px; }
 .gallery-dialog-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .gallery-dialog-header .gallery-eyebrow { margin: 0; }
@@ -94,8 +99,13 @@
 .gallery-dialog-quantity input::-webkit-inner-spin-button, .gallery-dialog-quantity input::-webkit-outer-spin-button { margin: 0; appearance: none; }
 .gallery-quantity-dialog .gallery-quote-button { margin-top: 4px; border: 0; cursor: pointer; }
 @keyframes gallery-overlay-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes gallery-overlay-out { from { opacity: 1; } to { opacity: 0; } }
 @keyframes gallery-drawer-in { from { transform: translateX(24px); } to { transform: translateX(0); } }
+@keyframes gallery-drawer-out { from { transform: translateX(0); } to { transform: translateX(24px); } }
 @keyframes gallery-dialog-in { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes gallery-dialog-out { from { opacity: 1; transform: translateY(0) scale(1); } to { opacity: 0; transform: translateY(8px) scale(.98); } }
+@keyframes gallery-catalog-enter { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes gallery-product-enter { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 
 @media (max-width: 900px) {
   .gallery-page .page-shell { width: min(100% - 64px, 1320px); }
@@ -146,5 +156,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .gallery-category-card > img { transition: none; }
-  .gallery-order-dialog, .gallery-order-dialog::backdrop, .gallery-quantity-dialog[open] { animation: none; }
+  .gallery-catalog, .gallery-product, .gallery-order-dialog, .gallery-order-dialog::backdrop,
+  .gallery-order-dialog.is-closing, .gallery-order-dialog.is-closing::backdrop,
+  .gallery-quantity-dialog[open], .gallery-quantity-dialog.is-closing { animation: none; }
 }

@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ArrowLeft, ArrowRight, Minus, Plus, ShoppingBag, Trash2, X } from 'lucide-react'
 import { galleryCategories } from '../data/gallery.js'
+import { apiRequest } from '../utils/api.js'
 import './GalleryPage.css'
 
 const orderStorageKey = 'oh-gallery-order'
@@ -23,30 +24,21 @@ function GalleryPage() {
   const [activeCategoryId, setActiveCategoryId] = useState(null)
   const [order, setOrder] = useState(readSavedOrder)
   const [isOrderOpen, setIsOrderOpen] = useState(false)
+  const [isOrderClosing, setIsOrderClosing] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState(null)
+  const [isQuantityClosing, setIsQuantityClosing] = useState(false)
   const [quantity, setQuantity] = useState(1)
+  const [account, setAccount] = useState(null)
+  const [isCheckingSession, setIsCheckingSession] = useState(true)
+  const [quoteError, setQuoteError] = useState('')
   const quantityDialogRef = useRef(null)
   const orderDialogRef = useRef(null)
+  const orderCloseTimeoutRef = useRef(null)
+  const quantityCloseTimeoutRef = useRef(null)
 
   const activeCategory = galleryCategories.find((category) => category.id === activeCategoryId)
   const orderCount = order.reduce((total, item) => total + item.quantity, 0)
   const orderTotal = order.reduce((total, item) => total + item.price * item.quantity, 0)
-
-  const quoteEmail = useMemo(() => {
-    const summary = order.map((item) => (
-      `${item.quantity} x ${item.name} | ${formatCurrency.format(item.price * item.quantity)}`
-    ))
-    const body = [
-      'Hola, quisiera cotizar los siguientes elementos:',
-      '',
-      ...summary,
-      '',
-      `Total estimado: ${formatCurrency.format(orderTotal)}`,
-      '',
-      'Entiendo que disponibilidad, transporte e instalacion se confirman con el equipo.',
-    ].join('\n')
-    return `mailto:ayuda@ohmontajesyeventos.com?subject=${encodeURIComponent('Solicitud de cotizacion de mobiliario')}&body=${encodeURIComponent(body)}`
-  }, [order, orderTotal])
 
   useEffect(() => {
     const previousTitle = document.title
@@ -82,6 +74,23 @@ function GalleryPage() {
   }, [])
 
   useEffect(() => {
+    let isActive = true
+
+    apiRequest('/api/auth/me')
+      .then(({ account: activeAccount }) => {
+        if (isActive) setAccount(activeAccount)
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (isActive) setIsCheckingSession(false)
+      })
+
+    return () => {
+      isActive = false
+    }
+  }, [])
+
+  useEffect(() => {
     try {
       window.sessionStorage.setItem(orderStorageKey, JSON.stringify(order))
     } catch {
@@ -104,14 +113,59 @@ function GalleryPage() {
     if (!isOrderOpen && dialog.open) dialog.close()
   }, [isOrderOpen])
 
+  useEffect(() => () => {
+    window.clearTimeout(orderCloseTimeoutRef.current)
+    window.clearTimeout(quantityCloseTimeoutRef.current)
+  }, [])
+
   useEffect(() => {
     if (!activeCategoryId) return
-    document.getElementById('catalogo')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+    document.getElementById('catalogo')?.scrollIntoView({ behavior, block: 'start' })
   }, [activeCategoryId])
 
   function openProductDialog(product) {
+    window.clearTimeout(quantityCloseTimeoutRef.current)
+    setIsQuantityClosing(false)
     setQuantity(1)
     setSelectedProduct(product)
+  }
+
+  function closeProductDialog() {
+    if (!selectedProduct || isQuantityClosing) return
+    setIsQuantityClosing(true)
+    quantityCloseTimeoutRef.current = window.setTimeout(() => setSelectedProduct(null), 180)
+  }
+
+  function openOrderDialog() {
+    window.clearTimeout(orderCloseTimeoutRef.current)
+    setIsOrderClosing(false)
+    setIsOrderOpen(true)
+  }
+
+  function closeOrderDialog() {
+    if (!isOrderOpen || isOrderClosing) return
+    setIsOrderClosing(true)
+    orderCloseTimeoutRef.current = window.setTimeout(() => setIsOrderOpen(false), 220)
+  }
+
+  async function handleRequestQuote() {
+    setQuoteError('')
+    setIsCheckingSession(true)
+
+    try {
+      const { account: activeAccount } = await apiRequest('/api/auth/me')
+      setAccount(activeAccount)
+      if (!activeAccount) {
+        window.location.assign('/cuenta?modo=registro')
+        return
+      }
+      window.alert('La solicitud de cotización aún está en desarrollo. Tu lista se conserva en esta pestaña.')
+    } catch {
+      setQuoteError('No pudimos comprobar tu sesión. Intenta de nuevo en un momento.')
+    } finally {
+      setIsCheckingSession(false)
+    }
   }
 
   function addSelectedProduct(event) {
@@ -128,7 +182,7 @@ function GalleryPage() {
       }
       return [...currentOrder, { ...selectedProduct, quantity: selectedQuantity }]
     })
-    setSelectedProduct(null)
+    closeProductDialog()
   }
 
   function changeQuantity(productId, difference) {
@@ -141,7 +195,7 @@ function GalleryPage() {
 
   return (
     <div className="gallery-page">
-      <section className="gallery-intro page-shell" aria-labelledby="gallery-title">
+      <section className="gallery-intro page-shell" data-reveal aria-labelledby="gallery-title">
         <div>
           <p className="gallery-eyebrow"><span>OH / 05</span> Catálogo para eventos</p>
           <h1 id="gallery-title">Piezas para darle forma a tu idea.</h1>
@@ -153,7 +207,7 @@ function GalleryPage() {
         </div>
       </section>
 
-      <section className="gallery-categories page-shell" aria-label="Categorías del catálogo">
+      <section className="gallery-categories page-shell" data-reveal aria-label="Categorías del catálogo">
         <div className="gallery-section-heading">
           <div>
             <p className="gallery-eyebrow"><span>01</span> Explora por categoría</p>
@@ -166,7 +220,7 @@ function GalleryPage() {
           )}
         </div>
         {!activeCategory && (
-          <div className="gallery-category-grid">
+          <div className="gallery-category-grid" data-reveal-stagger data-reveal-step="70">
             {galleryCategories.map((category, index) => (
               <button className="gallery-category-card" key={category.id} type="button" onClick={() => setActiveCategoryId(category.id)}>
                 <img src={category.image} alt={category.imageAlt} loading={index < 4 ? 'eager' : 'lazy'} decoding="async" />
@@ -183,7 +237,7 @@ function GalleryPage() {
       </section>
 
       {activeCategory && (
-        <section className="gallery-catalog page-shell" id="catalogo" aria-labelledby="catalog-title">
+        <section className="gallery-catalog page-shell" id="catalogo" key={activeCategory.id} aria-labelledby="catalog-title">
           <div className="gallery-section-heading">
             <div>
               <p className="gallery-eyebrow"><span>02</span> {activeCategory.name}</p>
@@ -194,7 +248,7 @@ function GalleryPage() {
           </div>
           <div className="gallery-product-grid">
             {activeCategory.products.map((product, index) => (
-              <article className="gallery-product" key={product.id}>
+              <article className="gallery-product" key={product.id} style={{ '--gallery-index': index }}>
                 <div className="gallery-product-image">
                   <img src={activeCategory.image} alt={activeCategory.imageAlt} loading="lazy" decoding="async" />
                   <span>{String(index + 1).padStart(2, '0')} / {String(activeCategory.products.length).padStart(2, '0')}</span>
@@ -222,26 +276,32 @@ function GalleryPage() {
 
       <div className="gallery-order-bar" aria-live="polite">
         <span>{orderCount === 0 ? 'Tu pedido está vacío' : `${orderCount} ${orderCount === 1 ? 'unidad' : 'unidades'} · ${formatCurrency.format(orderTotal)}`}</span>
-        <button type="button" onClick={() => setIsOrderOpen(true)}>
+        <button type="button" onClick={openOrderDialog}>
           <ShoppingBag size={17} /> Ver pedido {orderCount > 0 && <b>{orderCount}</b>}
         </button>
       </div>
 
-      <dialog className="gallery-order-dialog" ref={orderDialogRef} onClose={() => setIsOrderOpen(false)} onClick={(event) => { if (event.target === event.currentTarget) setIsOrderOpen(false) }}>
+      <dialog
+        className={`gallery-order-dialog${isOrderClosing ? ' is-closing' : ''}`}
+        ref={orderDialogRef}
+        onClose={() => { setIsOrderOpen(false); setIsOrderClosing(false) }}
+        onCancel={(event) => { event.preventDefault(); closeOrderDialog() }}
+        onClick={(event) => { if (event.target === event.currentTarget) closeOrderDialog() }}
+      >
         <aside className="gallery-order-drawer" aria-labelledby="order-title">
           <div className="gallery-order-header">
             <div>
               <p className="gallery-eyebrow"><span>OH / PEDIDO</span> Resumen</p>
               <h2 id="order-title">Tu lista de pedido</h2>
             </div>
-            <button className="gallery-icon-button" type="button" aria-label="Cerrar pedido" onClick={() => setIsOrderOpen(false)}><X size={20} /></button>
+            <button className="gallery-icon-button" type="button" aria-label="Cerrar pedido" onClick={closeOrderDialog}><X size={20} /></button>
           </div>
           {order.length === 0 ? (
             <div className="gallery-order-empty">
               <ShoppingBag size={27} />
               <h3>Aún no agregas productos</h3>
               <p>Explora una categoría y agrega las referencias que quieras cotizar.</p>
-              <button type="button" onClick={() => setIsOrderOpen(false)}>Volver al catálogo</button>
+              <button type="button" onClick={closeOrderDialog}>Volver al catálogo</button>
             </div>
           ) : (
             <>
@@ -269,16 +329,29 @@ function GalleryPage() {
                 <strong>{formatCurrency.format(orderTotal)}</strong>
                 <small>El valor final se confirma al cotizar.</small>
               </div>
-              <a className="gallery-quote-button" href={quoteEmail}>
-                Solicitar cotización <ArrowRight size={17} />
-              </a>
-              <p className="gallery-order-disclaimer">Este resumen no confirma una compra ni reserva inventario.</p>
+              <p className="gallery-order-disclaimer">
+                {isCheckingSession
+                  ? 'Comprobando tu sesión…'
+                  : account
+                    ? `Solicitud para ${account.email}. El total es referencial y no reserva inventario.`
+                    : 'Inicia sesión o regístrate para solicitar una cotización.'}
+              </p>
+              {quoteError && <p className="gallery-quote-error" role="alert">{quoteError}</p>}
+              <button className="gallery-quote-button" type="button" onClick={handleRequestQuote} disabled={isCheckingSession}>
+                {isCheckingSession ? 'Verificando sesión…' : 'Solicitar cotización'} <ArrowRight size={17} />
+              </button>
+              <p className="gallery-order-disclaimer">Este resumen no confirma una compra.</p>
             </>
           )}
         </aside>
       </dialog>
 
-      <dialog className="gallery-quantity-dialog" ref={quantityDialogRef} onClose={() => setSelectedProduct(null)}>
+      <dialog
+        className={`gallery-quantity-dialog${isQuantityClosing ? ' is-closing' : ''}`}
+        ref={quantityDialogRef}
+        onClose={() => { setSelectedProduct(null); setIsQuantityClosing(false) }}
+        onCancel={(event) => { event.preventDefault(); closeProductDialog() }}
+      >
         {selectedProduct && (
           <form onSubmit={addSelectedProduct}>
             <div className="gallery-dialog-header">
@@ -286,7 +359,7 @@ function GalleryPage() {
                 <p className="gallery-eyebrow"><span>Agregar al pedido</span></p>
                 <h2>{selectedProduct.name}</h2>
               </div>
-              <button className="gallery-icon-button" type="button" aria-label="Cerrar" onClick={() => setSelectedProduct(null)}><X size={19} /></button>
+              <button className="gallery-icon-button" type="button" aria-label="Cerrar" onClick={closeProductDialog}><X size={19} /></button>
             </div>
             <p className="gallery-dialog-price">{formatCurrency.format(selectedProduct.price)} <span>por unidad / jornada</span></p>
             <label className="gallery-quantity-label" htmlFor="gallery-quantity">Cantidad</label>

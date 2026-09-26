@@ -4,11 +4,10 @@ export async function onRequest({ request, env }) {
   const headers = new Headers(assetResponse.headers)
 
   headers.set('Cache-Control', 'no-store')
-  headers.set('Retry-After', '3600')
 
   return new Response(assetResponse.body, {
-    status: 503,
-    statusText: 'Service Unavailable',
+    status: assetResponse.status,
+    statusText: assetResponse.statusText,
     headers,
   })
 }

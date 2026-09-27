@@ -31,6 +31,19 @@ function formatDayLabel(dateString) {
   }).format(date)
 }
 
+function isValidDateInputValue(value) {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false
+  }
+
+  const parsed = new Date(`${value}T12:00:00`)
+  if (Number.isNaN(parsed.getTime())) {
+    return false
+  }
+
+  return toDateInputValue(parsed) === value
+}
+
 function AttendancePanelPage() {
   const [sessionAccount, setSessionAccount] = useState(null)
   const [isCheckingSession, setIsCheckingSession] = useState(true)
@@ -242,7 +255,18 @@ function AttendancePanelPage() {
 
           <label className="attendance-date-picker attendance-date-picker--inline" aria-label="Seleccionar fecha de asistencia">
             <CalendarDays size={15} />
-            <input type="date" value={selectedDate} onChange={(event) => setSelectedDate(event.target.value)} />
+            <input
+              type="date"
+              value={selectedDate}
+              max={toDateInputValue(new Date())}
+              onChange={(event) => {
+                const nextValue = event.target.value
+                if (!isValidDateInputValue(nextValue)) {
+                  return
+                }
+                setSelectedDate(nextValue)
+              }}
+            />
           </label>
         </section>
 
@@ -322,7 +346,18 @@ function AttendancePanelPage() {
 
             <label className="attendance-date-picker attendance-date-picker--compact" aria-label="Consultar asistencia por fecha">
               <CalendarDays size={15} />
-              <input type="date" value={queryDate} onChange={(event) => setQueryDate(event.target.value)} />
+              <input
+                type="date"
+                value={queryDate}
+                max={toDateInputValue(new Date())}
+                onChange={(event) => {
+                  const nextValue = event.target.value
+                  if (!isValidDateInputValue(nextValue)) {
+                    return
+                  }
+                  setQueryDate(nextValue)
+                }}
+              />
             </label>
           </div>
 

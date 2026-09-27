@@ -197,6 +197,11 @@ router.get('/attendance', verifyOrigin, async (request, response) => {
     return response.status(400).json({ error: 'La fecha no es válida.' })
   }
 
+  const normalizedDate = `${parsedDate.getFullYear()}-${String(parsedDate.getMonth() + 1).padStart(2, '0')}-${String(parsedDate.getDate()).padStart(2, '0')}`
+  if (normalizedDate !== requestedDate) {
+    return response.status(400).json({ error: 'La fecha no es válida.' })
+  }
+
   const roles = [...attendanceAllowedRoles].filter((role) => role !== 'owner')
   const result = await pool.query(
     `SELECT ca.id AS account_id, ca.name, ca.role, ar.status, ar.notes, ar.record_hash
@@ -230,6 +235,16 @@ router.post('/attendance', verifyOrigin, async (request, response) => {
   const entries = Array.isArray(request.body.entries) ? request.body.entries : []
 
   if (!/^\d{4}-\d{2}-\d{2}$/.test(attendanceDate)) {
+    return response.status(400).json({ error: 'La fecha de asistencia no es válida.' })
+  }
+
+  const parsedAttendanceDate = new Date(`${attendanceDate}T12:00:00`)
+  if (Number.isNaN(parsedAttendanceDate.getTime())) {
+    return response.status(400).json({ error: 'La fecha de asistencia no es válida.' })
+  }
+
+  const normalizedAttendanceDate = `${parsedAttendanceDate.getFullYear()}-${String(parsedAttendanceDate.getMonth() + 1).padStart(2, '0')}-${String(parsedAttendanceDate.getDate()).padStart(2, '0')}`
+  if (normalizedAttendanceDate !== attendanceDate) {
     return response.status(400).json({ error: 'La fecha de asistencia no es válida.' })
   }
 

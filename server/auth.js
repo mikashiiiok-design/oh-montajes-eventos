@@ -38,14 +38,16 @@ export function verifyOrigin(request, response, next) {
   const host = request.get('host') ?? request.get('x-forwarded-host') ?? ''
 
   if (origin && !isAllowedOrigin(origin)) {
+    if (host && isAllowedHost(host)) {
+      return next()
+    }
     return response.status(403).json({ error: 'Origen de solicitud no permitido.' })
   }
 
-  if (!origin && host && isAllowedHost(host)) {
-    return next()
-  }
-
   if (!origin) {
+    if (host && isAllowedHost(host)) {
+      return next()
+    }
     return response.status(403).json({ error: 'Origen de solicitud no permitido.' })
   }
 

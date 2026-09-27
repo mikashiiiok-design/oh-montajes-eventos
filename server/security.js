@@ -2,7 +2,10 @@ const defaultOrigins = [
   'http://localhost:5173',
   'http://127.0.0.1:5173',
   'https://oh-montajes-eventos.pages.dev',
+  'https://www.oh-montajes-eventos.pages.dev',
+  'https://render-backend-test.oh-montajes-eventos.pages.dev',
   'https://chidalgodev.xyz',
+  'https://www.chidalgodev.xyz',
 ]
 
 export const allowedOrigins = new Set(
@@ -58,8 +61,11 @@ export function isAllowedOrigin(origin) {
       return protocol === 'https:'
     }
 
-    if (process.env.NODE_ENV === 'production') return false
-    return protocol === 'http:' && ['localhost', '127.0.0.1', '::1', '[::1]'].includes(host)
+    if (host === 'localhost' || host === '127.0.0.1' || host === '::1' || host === '[::1]' || host.endsWith('.localhost')) {
+      return protocol === 'http:' || protocol === 'https:'
+    }
+
+    return false
   } catch {
     return false
   }

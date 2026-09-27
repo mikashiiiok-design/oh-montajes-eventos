@@ -206,7 +206,7 @@ router.get('/attendance', verifyOrigin, async (request, response) => {
   const result = await pool.query(
     `SELECT ca.id AS account_id, ca.name, ca.role, ar.status, ar.notes, ar.record_hash
      FROM customer_accounts AS ca
-     LEFT JOIN attendance_records AS ar
+     INNER JOIN attendance_records AS ar
        ON ar.account_id = ca.id AND ar.attendance_date = $1
      WHERE ca.role = ANY($2)
      ORDER BY ca.name ASC`,
@@ -217,7 +217,7 @@ router.get('/attendance', verifyOrigin, async (request, response) => {
     accountId: row.account_id,
     name: row.name,
     role: row.role,
-    status: row.status ?? 'present',
+    status: row.status,
     notes: row.notes,
     recordHash: row.record_hash,
   }))

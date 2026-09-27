@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowLeft, Check, Circle, FileText, ImagePlus, LoaderCircle, MessageCircle, RotateCcw, Send, UserRound, X } from 'lucide-react'
+import { ArrowLeft, Check, Circle, ClipboardList, FileText, ImagePlus, LoaderCircle, MessageCircle, RotateCcw, Send, UserRound, X } from 'lucide-react'
 import { chatAccessRoles, chatReopenRoles, getRoleInfo } from '../../shared/roles.js'
 import { apiRequest } from '../utils/api.js'
 import { compressChatImage } from '../utils/compressChatImage.js'
 import companyLogo from '../assets/LOGO-OH.webp'
+import QuoteWorkflowPanel from './QuoteWorkflowPanel.jsx'
 import './ChatsPage.css'
 
 const staffRoles = new Set(chatAccessRoles)
@@ -35,8 +36,10 @@ function ChatsPage() {
   const [isSending, setIsSending] = useState(false)
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false)
+  const [isWorkflowOpen, setIsWorkflowOpen] = useState(false)
   const [error, setError] = useState('')
   const invoiceDialogRef = useRef(null)
+  const workflowDialogRef = useRef(null)
   const messageListRef = useRef(null)
   const shouldAutoScrollRef = useRef(true)
   const imagePreviewRef = useRef('')
@@ -189,6 +192,13 @@ function ChatsPage() {
     if (isInvoiceOpen && !dialog.open) dialog.showModal()
     if (!isInvoiceOpen && dialog.open) dialog.close()
   }, [isInvoiceOpen])
+
+  useEffect(() => {
+    const dialog = workflowDialogRef.current
+    if (!dialog) return
+    if (isWorkflowOpen && !dialog.open) dialog.showModal()
+    if (!isWorkflowOpen && dialog.open) dialog.close()
+  }, [isWorkflowOpen])
 
   useEffect(() => () => {
     if (imagePreviewRef.current) URL.revokeObjectURL(imagePreviewRef.current)
@@ -377,8 +387,11 @@ function ChatsPage() {
                 <span className={`chat-status${activeChat.status === 'open' ? ' is-open' : ''}`}>
                   <Circle size={7} fill="currentColor" /> {activeChat.status === 'open' ? 'Abierto' : 'Cerrado'}
                 </span>
+                <button className="chat-workflow-button" type="button" onClick={() => setIsWorkflowOpen(true)} title="Cotización y pedido" aria-label="Abrir cotización y pedido">
+                  <ClipboardList size={16} /><span>Cotización y pedido</span>
+                </button>
                 <button className="chat-invoice-button" type="button" onClick={() => setIsInvoiceOpen(true)}>
-                  <FileText size={16} /> <span>Ver factura</span>
+                  <FileText size={16} /> <span>Ver solicitud</span>
                 </button>
                 {isStaff && activeChat.status === 'open' && (
                   <button className="chat-close-button" type="button" onClick={() => updateConversationStatus('close')} disabled={isUpdatingStatus} title="Cerrar conversación" aria-label="Cerrar conversación">
@@ -470,12 +483,18 @@ function ChatsPage() {
         </section>
       </section>
 
+      {activeChat && (
+        <dialog className="chat-workflow-dialog" ref={workflowDialogRef} onClose={() => setIsWorkflowOpen(false)} onCancel={(event) => { event.preventDefault(); setIsWorkflowOpen(false) }}>
+          <QuoteWorkflowPanel chat={activeChat} account={account} isStaff={isStaff} onClose={() => setIsWorkflowOpen(false)} />
+        </dialog>
+      )}
+
       <dialog className="chat-invoice-dialog" ref={invoiceDialogRef} onClose={() => setIsInvoiceOpen(false)} onCancel={(event) => { event.preventDefault(); setIsInvoiceOpen(false) }}>
         {activeChat && (
           <div className="chat-invoice-content">
             <header className="chat-invoice-header">
-              <div><p className="chats-eyebrow"><span>OH / COTIZACIÓN</span> Valor estimado</p><h2>Resumen de factura</h2></div>
-              <button type="button" aria-label="Cerrar factura" onClick={() => setIsInvoiceOpen(false)}><X size={19} /></button>
+              <div><p className="chats-eyebrow"><span>OH / SOLICITUD</span> Valores de referencia</p><h2>Resumen de solicitud</h2></div>
+              <button type="button" aria-label="Cerrar solicitud" onClick={() => setIsInvoiceOpen(false)}><X size={19} /></button>
             </header>
             <div className="chat-invoice-customer"><span>Cliente</span><strong>{activeChat.customerName ?? account.name}</strong><small>{activeChat.customerEmail ?? account.email}</small></div>
             <div className="chat-invoice-items">
@@ -486,8 +505,8 @@ function ChatsPage() {
                 </div>
               ))}
             </div>
-            <div className="chat-invoice-total"><span>Total estimado</span><strong>{formatCurrency.format(invoiceTotal)}</strong></div>
-            <p className="chat-invoice-note">Valores de referencia antes de transporte, montaje e impuestos. El equipo confirmará disponibilidad y valor final.</p>
+            <div className="chat-invoice-total"><span>Referencia del catálogo</span><strong>{formatCurrency.format(invoiceTotal)}</strong></div>
+            <p className="chat-invoice-note">Este importe no es una cotización final. El equipo confirmará disponibilidad, personalizaciones y costos desde Cotización y pedido.</p>
           </div>
         )}
       </dialog>

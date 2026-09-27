@@ -313,44 +313,54 @@ function AttendancePanelPage() {
           </div>
         </section>
 
-        <section className="attendance-panel-card" aria-label="Consulta de registros de asistencia">
-          <div className="attendance-panel-table-header attendance-panel-table-header--with-picker">
-            <span>Consulta de registros</span>
-            <span className="attendance-panel-table-header-date">
-              <span className="attendance-panel-table-heading-label">Fecha</span>
-              <label className="attendance-date-picker attendance-date-picker--compact" aria-label="Consultar asistencia por fecha">
-                <CalendarDays size={15} />
-                <input type="date" value={queryDate} onChange={(event) => setQueryDate(event.target.value)} />
-              </label>
-            </span>
-            <span>Estado</span>
+        <section className="attendance-panel-card attendance-panel-card--query" aria-label="Consulta de registros de asistencia">
+          <div className="attendance-query-header">
+            <div>
+              <p className="attendance-query-kicker">Consulta de registros</p>
+              <h2>Resumen de asistencia</h2>
+            </div>
+
+            <label className="attendance-date-picker attendance-date-picker--compact" aria-label="Consultar asistencia por fecha">
+              <CalendarDays size={15} />
+              <input type="date" value={queryDate} onChange={(event) => setQueryDate(event.target.value)} />
+            </label>
           </div>
 
           {queryError && <p className="attendance-panel-error" role="alert">{queryError}</p>}
 
           {queryRecords.length === 0 ? (
-            <p className="attendance-panel-empty">No hay registros para esta fecha.</p>
+            <div className="attendance-query-empty">
+              <span className="attendance-query-empty-icon">!</span>
+              <p>No hay registro de asistencia guardado para ese día.</p>
+            </div>
           ) : (
-            <div className="attendance-panel-list">
-              {queryRecords.map((record) => {
-                const roleInfo = getRoleInfo(record.role)
-                const recordStatus = attendanceOptions.find((option) => option.value === record.status)?.label ?? record.status
+            <div className="attendance-query-results">
+              <div className="attendance-query-summary">
+                <span className="attendance-query-date-label">Fecha consultada</span>
+                <strong>{formatDayLabel(queryDate)}</strong>
+              </div>
 
-                return (
-                  <div key={`${record.accountId}-${record.date ?? queryDate}`} className="attendance-panel-row">
-                    <div className="attendance-worker-meta">
-                      <span className="attendance-worker-name">{record.name}</span>
-                      <small className="attendance-worker-email">{record.email ?? roleInfo.label}</small>
-                    </div>
-                    <span className="attendance-role-pill" data-role={record.role}>{roleInfo.label}</span>
-                    <span className="attendance-status-wrap attendance-status-wrap--read">
+              <div className="attendance-query-list">
+                {queryRecords.map((record) => {
+                  const roleInfo = getRoleInfo(record.role)
+                  const recordStatus = attendanceOptions.find((option) => option.value === record.status)?.label ?? record.status
+
+                  return (
+                    <div key={`${record.accountId}-${record.date ?? queryDate}`} className="attendance-query-item">
+                      <div className="attendance-query-meta">
+                        <span className="attendance-query-name">{record.name}</span>
+                        <small>{record.email ?? roleInfo.label}</small>
+                      </div>
+
+                      <span className="attendance-role-pill" data-role={record.role}>{roleInfo.label}</span>
+
                       <span className={`attendance-status-badge attendance-status-badge--${record.status ?? 'unknown'}`}>
                         {recordStatus}
                       </span>
-                    </span>
-                  </div>
-                )
-              })}
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           )}
         </section>

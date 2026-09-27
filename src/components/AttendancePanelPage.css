@@ -211,6 +211,121 @@
   text-transform: uppercase;
 }
 
+.attendance-panel-card--query {
+  margin-top: 28px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.attendance-query-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px 16px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.attendance-query-kicker {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.attendance-query-header h2 {
+  margin: 0;
+  font-size: clamp(22px, 3vw, 34px);
+  font-weight: 600;
+}
+
+.attendance-query-results {
+  display: grid;
+  gap: 20px;
+  padding: 18px 16px 20px;
+}
+
+.attendance-query-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.attendance-query-date-label {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.attendance-query-summary strong {
+  font-size: clamp(18px, 2vw, 28px);
+  font-weight: 600;
+}
+
+.attendance-query-list {
+  display: grid;
+  gap: 12px;
+}
+
+.attendance-query-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(140px, 0.7fr) minmax(0, 1.1fr);
+  align-items: center;
+  gap: 16px;
+  min-height: 78px;
+  padding: 16px 14px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.01);
+}
+
+.attendance-query-meta {
+  display: grid;
+  gap: 4px;
+}
+
+.attendance-query-name {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.attendance-query-meta small {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.attendance-query-empty {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 22px 16px 24px;
+  color: var(--muted);
+}
+
+.attendance-query-empty-icon {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 1px solid rgba(255, 159, 67, 0.5);
+  background: rgba(255, 159, 67, 0.08);
+  color: #ffb466;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.attendance-query-empty p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
 .attendance-panel-row {
   min-height: 80px;
   padding: 18px 16px;

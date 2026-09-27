@@ -166,7 +166,7 @@ function AttendancePanelPage() {
 
   if (isCheckingSession) {
     return (
-      <main className="attendance-panel">
+      <main className="attendance-panel-page">
         <div className="attendance-state" role="status">Comprobando acceso…</div>
       </main>
     )
@@ -174,7 +174,7 @@ function AttendancePanelPage() {
 
   if (isAccessBlocked) {
     return (
-      <main className="attendance-panel">
+      <main className="attendance-panel-page">
         <div className="attendance-state" role="alert">
           <ShieldCheck size={28} />
           <h1>Acceso restringido</h1>
@@ -186,16 +186,16 @@ function AttendancePanelPage() {
   }
 
   return (
-    <main className="attendance-panel">
-      <header className="attendance-topbar">
-        <a href="/cuenta" className="attendance-back">Volver a mi cuenta</a>
-        <span className="attendance-brand">OH / ASISTENCIA</span>
+    <main className="attendance-panel-page">
+      <header className="attendance-panel-topbar">
+        <a href="/cuenta" className="attendance-panel-back">Volver a mi cuenta</a>
+        <span className="attendance-panel-brand">OH / ASISTENCIA</span>
       </header>
 
-      <div className="attendance-shell">
-        <section className="attendance-header">
+      <div className="attendance-panel-shell">
+        <section className="attendance-panel-heading">
           <div>
-            <p className="attendance-kicker"><span>CONTROL / 02</span> Registro diario</p>
+            <p className="attendance-panel-eyebrow"><span>CONTROL / 02</span> Registro diario</p>
             <h1>Lista de asistencia</h1>
           </div>
           <label className="attendance-date-picker" aria-label="Seleccionar fecha de asistencia">
@@ -204,39 +204,39 @@ function AttendancePanelPage() {
           </label>
         </section>
 
-        <section className="attendance-summary">
-          <div className="attendance-card">
-            <span>Fecha actual</span>
+        <section className="attendance-panel-summary">
+          <div className="attendance-panel-summary-item">
+            <span className="attendance-summary-label">Fecha actual</span>
             <strong>{formatDayLabel(selectedDate)}</strong>
           </div>
-          <div className="attendance-card">
-            <span>Personal activo</span>
+          <div className="attendance-panel-summary-item">
+            <span className="attendance-summary-label">Personal activo</span>
             <strong>{visibleWorkers.length} colaboradores</strong>
           </div>
         </section>
 
-        {notice && <p className="attendance-notice" role="status">{notice}</p>}
-        {error && <p className="attendance-error" role="alert">{error}</p>}
+        {notice && <p className="attendance-panel-notice" role="status">{notice}</p>}
+        {error && <p className="attendance-panel-error" role="alert">{error}</p>}
 
-        <section className="attendance-table-card" aria-label="Listado de asistencia por trabajador">
-          <div className="attendance-table-head">
+        <section className="attendance-panel-card" aria-label="Listado de asistencia por trabajador">
+          <div className="attendance-panel-table-header">
             <span>Trabajador</span>
             <span>Rol</span>
             <span>Asistencia</span>
           </div>
 
           {visibleWorkers.length === 0 ? (
-            <p className="attendance-empty">No hay personal disponible para esta fecha.</p>
+            <p className="attendance-panel-empty">No hay personal disponible para esta fecha.</p>
           ) : (
-            <div className="attendance-list">
+            <div className="attendance-panel-list">
               {visibleWorkers.map((worker) => (
-                <div key={worker.id} className="attendance-row">
-                  <div className="attendance-worker">
-                    <span className="attendance-name">{worker.name}</span>
-                    <small>{worker.email}</small>
+                <div key={worker.id} className="attendance-panel-row">
+                  <div className="attendance-worker-meta">
+                    <span className="attendance-worker-name">{worker.name}</span>
+                    <small className="attendance-worker-email">{worker.email}</small>
                   </div>
-                  <span className="attendance-role-badge">{getRoleInfo(worker.role).label}</span>
-                  <label className="attendance-select-wrap">
+                  <span className="attendance-role-pill">{getRoleInfo(worker.role).label}</span>
+                  <label className="attendance-status-wrap">
                     <select
                       value={draft[String(worker.id)] ?? 'present'}
                       onChange={(event) => {
@@ -256,8 +256,8 @@ function AttendancePanelPage() {
             </div>
           )}
 
-          <div className="attendance-actions">
-            <button type="button" onClick={handleSave} className="attendance-save" disabled={isSaving || !hasUnsavedChanges || visibleWorkers.length === 0}>
+          <div className="attendance-panel-actions">
+            <button type="button" onClick={handleSave} className="attendance-panel-save" disabled={isSaving || !hasUnsavedChanges || visibleWorkers.length === 0}>
               {isSaving ? 'Guardando…' : 'Guardar registro'}
               {!isSaving && <Save size={15} />}
             </button>

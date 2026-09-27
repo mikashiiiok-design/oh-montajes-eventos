@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowLeft, Check, Circle, FileText, ImagePlus, LoaderCircle, MessageCircle, Send, UserRound, X } from 'lucide-react'
-import { chatAccessRoles, getRoleInfo } from '../../shared/roles.js'
+import { ArrowLeft, Check, Circle, FileText, ImagePlus, LoaderCircle, MessageCircle, RotateCcw, Send, UserRound, X } from 'lucide-react'
+import { chatAccessRoles, chatReopenRoles, getRoleInfo } from '../../shared/roles.js'
 import { apiRequest } from '../utils/api.js'
 import { compressChatImage } from '../utils/compressChatImage.js'
 import companyLogo from '../assets/LOGO-OH.webp'
 import './ChatsPage.css'
 
 const staffRoles = new Set(chatAccessRoles)
+const reopenRoles = new Set(chatReopenRoles)
 const formatCurrency = new Intl.NumberFormat('es-CO', {
   style: 'currency',
   currency: 'COP',
@@ -32,7 +33,7 @@ function ChatsPage() {
   const [imagePreview, setImagePreview] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isSending, setIsSending] = useState(false)
-  const [isClosing, setIsClosing] = useState(false)
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false)
   const [error, setError] = useState('')
   const invoiceDialogRef = useRef(null)
@@ -42,6 +43,7 @@ function ChatsPage() {
   const typingTimeoutRef = useRef(null)
   const initialChatIdRef = useRef(selectedChatId)
   const isStaff = staffRoles.has(account?.role)
+  const canReopenChat = reopenRoles.has(account?.role)
   const isAuthorized = account?.role === 'client' || isStaff
   const activeChatId = activeChat?.id
   const activeMessageCount = activeChat?.messages.length
@@ -267,19 +269,20 @@ function ChatsPage() {
     }
   }
 
-  async function closeConversation() {
-    if (!activeChat || isClosing) return
-    setIsClosing(true)
+  async function updateConversationStatus(action) {
+    if (!activeChat || isUpdatingStatus) return
+    const nextStatus = action === 'reopen' ? 'open' : 'closed'
+    setIsUpdatingStatus(true)
     setError('')
     try {
-      await apiRequest(`/api/chats/${activeChat.id}/close`, { method: 'POST' })
-      setActiveChat((current) => current ? { ...current, status: 'closed' } : current)
+      await apiRequest(`/api/chats/${activeChat.id}/${action}`, { method: 'POST' })
+      setActiveChat((current) => current ? { ...current, status: nextStatus } : current)
       const { chats: activeChats } = await apiRequest('/api/chats')
       setChats(activeChats)
     } catch (requestError) {
       setError(requestError.message)
     } finally {
-      setIsClosing(false)
+      setIsUpdatingStatus(false)
     }
   }
 
@@ -368,8 +371,13 @@ function ChatsPage() {
                   <FileText size={16} /> <span>Ver factura</span>
                 </button>
                 {isStaff && activeChat.status === 'open' && (
-                  <button className="chat-close-button" type="button" onClick={closeConversation} disabled={isClosing} title="Cerrar conversación" aria-label="Cerrar conversación">
-                    {isClosing ? <LoaderCircle size={17} className="chats-spinner" /> : <X size={17} />}
+                  <button className="chat-close-button" type="button" onClick={() => updateConversationStatus('close')} disabled={isUpdatingStatus} title="Cerrar conversación" aria-label="Cerrar conversación">
+                    {isUpdatingStatus ? <LoaderCircle size={17} className="chats-spinner" /> : <X size={17} />}
+                  </button>
+                )}
+                {canReopenChat && activeChat.status === 'closed' && (
+                  <button className="chat-reopen-button" type="button" onClick={() => updateConversationStatus('reopen')} disabled={isUpdatingStatus} title="Reabrir conversación" aria-label="Reabrir conversación">
+                    {isUpdatingStatus ? <LoaderCircle size={17} className="chats-spinner" /> : <RotateCcw size={17} />}
                   </button>
                 )}
               </header>

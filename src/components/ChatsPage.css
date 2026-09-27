@@ -36,11 +36,12 @@
 .chat-header-copy span { overflow: hidden; color: var(--muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
 .chat-status { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 9px; white-space: nowrap; }
 .chat-status.is-open { color: #498462; }
-.chat-invoice-button, .chat-close-button, .chat-mobile-back, .chat-invoice-header > button { display: inline-flex; min-height: 36px; align-items: center; justify-content: center; gap: 7px; padding: 0 10px; border: 1px solid var(--line); background: transparent; color: var(--text); cursor: pointer; }
+.chat-invoice-button, .chat-close-button, .chat-reopen-button, .chat-mobile-back, .chat-invoice-header > button { display: inline-flex; min-height: 36px; align-items: center; justify-content: center; gap: 7px; padding: 0 10px; border: 1px solid var(--line); background: transparent; color: var(--text); cursor: pointer; }
 .chat-invoice-button { font-size: 10px; font-weight: 800; white-space: nowrap; }
 .chat-invoice-button svg { color: var(--accent); }
-.chat-invoice-button:hover, .chat-close-button:hover, .chat-mobile-back:hover, .chat-invoice-header > button:hover { border-color: var(--accent); }
+.chat-invoice-button:hover, .chat-close-button:hover, .chat-reopen-button:hover, .chat-mobile-back:hover, .chat-invoice-header > button:hover { border-color: var(--accent); }
 .chat-close-button { width: 36px; padding: 0; color: #a83e33; }
+.chat-reopen-button { width: 36px; padding: 0; color: #327450; }
 .chat-mobile-back { display: none; width: 36px; padding: 0; }
 .chat-message-list { display: flex; min-height: 0; flex: 1 1 0; flex-direction: column; gap: 14px; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; padding: 22px clamp(16px, 4vw, 54px); scrollbar-gutter: stable; }
 .chat-start-note { display: grid; justify-items: center; gap: 5px; margin: 0 auto 7px; color: var(--muted); font-size: 9px; }
@@ -128,7 +129,7 @@
   .chat-status { display: none; }
   .chat-invoice-button { min-height: 33px; gap: 5px; padding: 0 7px; font-size: 9px; }
   .chat-invoice-button svg { width: 14px; }
-  .chat-close-button { width: 33px; min-height: 33px; }
+  .chat-close-button, .chat-reopen-button { width: 33px; min-height: 33px; }
   .chat-message-list { gap: 12px; padding: 17px 12px; }
   .chat-message { max-width: 88%; }
   .chat-composer { min-height: 60px; gap: 7px; padding: 9px; }

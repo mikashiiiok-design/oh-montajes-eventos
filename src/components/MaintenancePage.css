@@ -46,7 +46,12 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .maintenance-art-ring { animation: none; opacity: .18; transform: scale(1.25); }
-  .maintenance-art-mark svg { animation: none; filter: none; }
+  .maintenance-art-ring { animation-name: maintenance-ripple-reduced; animation-duration: 6s; }
+  .maintenance-art-ring-two { animation-delay: -2s; }
+  .maintenance-art-ring-three { animation-delay: -4s; }
+  .maintenance-art-mark svg { animation-name: maintenance-tool-motion-reduced; animation-duration: 5s; filter: none; }
   .maintenance-contact { transition: none; }
 }
+
+@keyframes maintenance-ripple-reduced { 0% { opacity: 0; transform: scale(.8); } 18% { opacity: .35; } 80%, 100% { opacity: 0; transform: scale(1.4); } }
+@keyframes maintenance-tool-motion-reduced { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg) translateY(-2px); } }

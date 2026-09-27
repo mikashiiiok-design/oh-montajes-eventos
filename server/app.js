@@ -5,6 +5,7 @@ import helmet from 'helmet'
 import { rateLimit } from 'express-rate-limit'
 import { pool } from './db.js'
 import authRouter from './auth.js'
+import chatRouter from './chat.js'
 import { isAllowedOrigin } from './security.js'
 
 const app = express()
@@ -35,6 +36,7 @@ app.use('/api', rateLimit({
   legacyHeaders: false,
   message: { error: 'Demasiadas solicitudes. Espera un momento y vuelve a probar.' },
 }))
+app.use('/api/chats', chatRouter)
 app.use(express.json({ limit: '32kb' }))
 app.use('/api/auth', authRouter)
 

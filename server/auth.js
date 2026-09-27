@@ -120,7 +120,7 @@ function adminAccountView(account) {
   }
 }
 
-async function resolveSessionAccount(request, response) {
+export async function resolveSessionAccount(request, response) {
   const token = getSessionToken(request)
   if (!token) return null
 

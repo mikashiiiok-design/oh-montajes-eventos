@@ -96,6 +96,57 @@ export async function initializeDatabase() {
     CREATE INDEX IF NOT EXISTS attendance_records_date_idx
     ON attendance_records (attendance_date DESC)
   `)
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS chat_conversations (
+      id BIGSERIAL PRIMARY KEY,
+      customer_id BIGINT NOT NULL REFERENCES customer_accounts(id) ON DELETE CASCADE,
+      status VARCHAR(16) NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'closed')),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      last_message_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      closed_at TIMESTAMPTZ
+    )
+  `)
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS chat_conversations_customer_idx
+    ON chat_conversations (customer_id, last_message_at DESC)
+  `)
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS chat_conversations_open_idx
+    ON chat_conversations (last_message_at DESC) WHERE status = 'open'
+  `)
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS chat_quote_items (
+      id BIGSERIAL PRIMARY KEY,
+      chat_id BIGINT NOT NULL REFERENCES chat_conversations(id) ON DELETE CASCADE,
+      product_id VARCHAR(80) NOT NULL,
+      product_name VARCHAR(160) NOT NULL,
+      category_name VARCHAR(100) NOT NULL,
+      unit_price INTEGER NOT NULL CHECK (unit_price >= 0),
+      quantity SMALLINT NOT NULL CHECK (quantity BETWEEN 1 AND 99)
+    )
+  `)
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS chat_messages (
+      id BIGSERIAL PRIMARY KEY,
+      chat_id BIGINT NOT NULL REFERENCES chat_conversations(id) ON DELETE CASCADE,
+      sender_id BIGINT REFERENCES customer_accounts(id) ON DELETE SET NULL,
+      body VARCHAR(2000),
+      image_data BYTEA,
+      image_mime VARCHAR(32),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      CHECK (body IS NOT NULL OR image_data IS NOT NULL)
+    )
+  `)
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS chat_messages_chat_idx
+    ON chat_messages (chat_id, created_at, id)
+  `)
 }
 
 pool.on('error', (error) => {

@@ -142,11 +142,6 @@ router.post('/', verifyOrigin, async (request, response) => {
       )
     }
 
-    await client.query(
-      `INSERT INTO chat_messages (chat_id, sender_id, body)
-       VALUES ($1, $2, $3)`,
-      [chatId, account.id, 'Solicitud de cotización creada desde la galería.'],
-    )
     await client.query('COMMIT')
     return response.status(201).json({ chatId })
   } catch (error) {

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { CalendarDays, Save, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, CalendarDays, Save, ShieldCheck } from 'lucide-react'
 import { apiRequest } from '../utils/api.js'
 import { attendanceAccessRoles, attendanceWorkerRoles, getRoleInfo } from '../../shared/roles.js'
 import './AttendancePanelPage.css'
@@ -229,7 +229,7 @@ function AttendancePanelPage() {
   return (
     <main className="attendance-panel-page">
       <header className="attendance-panel-topbar">
-        <a href="/cuenta" className="attendance-panel-back">Volver a mi cuenta</a>
+        <a href="/cuenta" className="attendance-panel-back"><ArrowLeft size={16} /> Cuenta</a>
         <span className="attendance-panel-brand">OH / ASISTENCIA</span>
       </header>
 

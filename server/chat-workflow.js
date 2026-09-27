@@ -265,6 +265,11 @@ router.post('/quotes', async (request, response) => {
           item.unitPrice, item.quantity, JSON.stringify(item.customizations)],
       )
     }
+    await client.query(
+      `INSERT INTO chat_messages (chat_id, sender_id, body)
+       VALUES ($1, $2, $3)`,
+      [chat.id, account.id, `Cotización versión ${version} enviada para revisión.`],
+    )
     await client.query('UPDATE chat_conversations SET last_message_at = NOW() WHERE id = $1', [chat.id])
     await client.query('COMMIT')
     return response.status(201).json({ quoteId, version, totalAmount: parsedItems.total })
@@ -322,6 +327,11 @@ router.post('/quotes/:quoteId/accept', async (request, response) => {
       `UPDATE chat_quote_versions SET status = 'superseded'
        WHERE chat_id = $1 AND id <> $2 AND status = 'sent'`,
       [chat.id, quoteId],
+    )
+    await client.query(
+      `INSERT INTO chat_messages (chat_id, sender_id, body)
+       VALUES ($1, $2, $3)`,
+      [chat.id, account.id, `Cotización versión ${quote.rows[0].version} aceptada.`],
     )
     await client.query('UPDATE chat_conversations SET last_message_at = NOW() WHERE id = $1', [chat.id])
     await client.query('COMMIT')
@@ -424,6 +434,11 @@ router.post('/orders', async (request, response) => {
         [orderId, task.key, task.label, task.accountId],
       )
     }
+    await client.query(
+      `INSERT INTO chat_messages (chat_id, sender_id, body)
+       VALUES ($1, $2, $3)`,
+      [chat.id, account.id, `Pedido OH-${String(orderId).padStart(6, '0')} creado y enviado a planificación.`],
+    )
     await client.query('UPDATE chat_conversations SET last_message_at = NOW() WHERE id = $1', [chat.id])
     await client.query('COMMIT')
     return response.status(201).json({ orderId, status: 'planning' })

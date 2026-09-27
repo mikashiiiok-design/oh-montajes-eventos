@@ -41,7 +41,6 @@ function ChatsPage() {
   const shouldAutoScrollRef = useRef(true)
   const imagePreviewRef = useRef('')
   const typingTimeoutRef = useRef(null)
-  const initialChatIdRef = useRef(selectedChatId)
   const isStaff = staffRoles.has(account?.role)
   const canReopenChat = reopenRoles.has(account?.role)
   const isAuthorized = account?.role === 'client' || isStaff
@@ -49,6 +48,8 @@ function ChatsPage() {
   const activeMessageCount = activeChat?.messages.length
   const activeReadMessageCount = activeChat?.messages.filter((message) => String(message.senderId) === String(account?.id) && message.isRead).length ?? 0
   const activeTypingUserIds = activeChat?.typingUsers?.map((user) => user.id).join(',') ?? ''
+  const openChats = chats.filter((chat) => chat.status === 'open')
+  const closedChats = chats.filter((chat) => chat.status === 'closed')
 
   useEffect(() => {
     const previousTitle = document.title
@@ -72,7 +73,6 @@ function ChatsPage() {
         const { chats: activeChats } = await apiRequest('/api/chats')
         if (isActive) {
           setChats(activeChats)
-          if (!initialChatIdRef.current && activeChats.length > 0) setSelectedChatId(String(activeChats[0].id))
         }
       } catch (requestError) {
         if (isActive) setError(requestError.message)
@@ -286,6 +286,29 @@ function ChatsPage() {
     }
   }
 
+  function renderChatItem(chat) {
+    return (
+      <button
+        type="button"
+        key={chat.id}
+        className={`chats-list-item${String(chat.id) === selectedChatId ? ' is-selected' : ''}`}
+        onClick={() => selectChat(chat.id)}
+      >
+        <span className="chats-list-avatar"><UserRound size={17} /></span>
+        <span className="chats-list-copy">
+          <span className="chats-list-meta">
+            <strong>{isStaff ? chat.customer_name : `Cotización OH-${String(chat.id).padStart(6, '0')}`}</strong>
+            <time dateTime={chat.last_message_at}>{formatTime.format(new Date(chat.last_message_at))}</time>
+          </span>
+          <span className="chats-list-preview">
+            {chat.last_message || (chat.last_message_has_image ? 'Imagen adjunta' : 'Solicitud de cotización')}
+          </span>
+          <span className="chats-list-status"><Circle size={7} fill="currentColor" /> {chat.status === 'open' ? 'Abierto' : 'Cerrado'}</span>
+        </span>
+      </button>
+    )
+  }
+
   const invoiceTotal = activeChat?.items.reduce((total, item) => total + Number(item.unit_price) * item.quantity, 0) ?? 0
 
   if (isLoading) {
@@ -319,36 +342,23 @@ function ChatsPage() {
           <div className="chats-rail-heading">
             <p className="chats-eyebrow"><span>OH / ATENCIÓN</span> {isStaff ? 'Equipo' : 'Cliente'}</p>
             <h1>{isStaff ? 'Conversaciones' : 'Mis cotizaciones'}</h1>
-            <p>{isStaff ? 'Chats abiertos con clientes' : 'Sigue aquí tus solicitudes'}</p>
+            <p>{isStaff ? 'Chats abiertos y cerrados con clientes' : 'Sigue aquí tus solicitudes'}</p>
           </div>
           <div className="chats-list" aria-live="polite">
-            {chats.length === 0 ? (
-              <div className="chats-list-empty">
-                <MessageCircle size={21} />
-                <p>{isStaff ? 'No hay conversaciones abiertas.' : 'Aún no tienes cotizaciones.'}</p>
-                {!isStaff && <a href="/galeria">Explorar galería</a>}
-              </div>
-            ) : chats.map((chat) => (
-              <button
-                type="button"
-                key={chat.id}
-                className={`chats-list-item${String(chat.id) === selectedChatId ? ' is-selected' : ''}`}
-                onClick={() => selectChat(chat.id)}
-              >
-                <span className="chats-list-avatar"><UserRound size={17} /></span>
-                <span className="chats-list-copy">
-                  <span className="chats-list-meta">
-                    <strong>{isStaff ? chat.customer_name : `Cotización OH-${String(chat.id).padStart(6, '0')}`}</strong>
-                    <time dateTime={chat.last_message_at}>{formatTime.format(new Date(chat.last_message_at))}</time>
-                  </span>
-                  <span className="chats-list-preview">
-                    {chat.last_message || (chat.last_message_has_image ? 'Imagen adjunta' : 'Solicitud de cotización')}
-                  </span>
-                  <span className="chats-list-status"><Circle size={7} fill="currentColor" /> {chat.status === 'open' ? 'Abierto' : 'Cerrado'}</span>
-                </span>
-              </button>
-            ))}
+            <section className="chats-list-section" aria-labelledby="open-chats-title">
+              <h2 id="open-chats-title">Abiertos <span>{openChats.length}</span></h2>
+              {openChats.length > 0
+                ? openChats.map((chat) => renderChatItem(chat))
+                : <div className="chats-list-section-empty"><p>{isStaff ? 'No hay chats abiertos.' : 'No tienes cotizaciones abiertas.'}</p>{!isStaff && chats.length === 0 && <a href="/galeria">Explorar galería</a>}</div>}
+            </section>
+            <section className="chats-list-section" aria-labelledby="closed-chats-title">
+              <h2 id="closed-chats-title">Cerrados <span>{closedChats.length}</span></h2>
+              {closedChats.length > 0
+                ? closedChats.map((chat) => renderChatItem(chat))
+                : <p className="chats-list-section-empty">{isStaff ? 'No hay chats cerrados.' : 'No tienes cotizaciones cerradas.'}</p>}
+            </section>
           </div>
+          {!selectedChatId && <p className="chats-select-prompt">Selecciona un chat para ver la conversación.</p>}
           <div className="chats-rail-footer"><span>{account.name}</span><span>{isStaff ? 'Panel de equipo' : 'Atención OH'}</span></div>
         </aside>
 

@@ -12,6 +12,13 @@
 .chats-rail-heading h1 { margin: 0 0 7px; font-size: 27px; font-weight: 600; line-height: 1.12; }
 .chats-rail-heading > p:last-child { margin: 0; color: var(--muted); font-size: 11px; }
 .chats-list { flex: 1; overflow: auto; }
+.chats-list-section { padding: 12px 0 4px; }
+.chats-list-section + .chats-list-section { border-top: 1px solid var(--line); }
+.chats-list-section h2 { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0; padding: 3px 15px 9px; color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.chats-list-section h2 span { display: grid; min-width: 20px; height: 20px; place-items: center; border: 1px solid var(--line); color: var(--text); font-size: 9px; font-variant-numeric: tabular-nums; }
+.chats-list-section-empty { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0; padding: 7px 15px 12px; color: var(--muted); font-size: 10px; }
+.chats-list-section-empty a { color: var(--text); font-size: 9px; font-weight: 800; white-space: nowrap; }
+.chats-select-prompt { display: none; }
 .chats-list-item { display: flex; width: 100%; min-height: 78px; align-items: center; gap: 11px; padding: 12px 15px; border: 0; border-bottom: 1px solid var(--line); background: transparent; color: var(--text); text-align: left; cursor: pointer; }
 .chats-list-item:hover, .chats-list-item.is-selected { background: var(--surface); }
 .chats-list-item.is-selected { box-shadow: inset 3px 0 var(--accent); }
@@ -117,6 +124,7 @@
   .chats-rail { min-height: 0; border-right: 0; }
   .chats-rail-heading { padding: 19px 17px 15px; }
   .chats-rail-heading h1 { font-size: 23px; }
+  .chats-select-prompt { display: block; margin: 0; padding: 10px 17px; border-top: 1px solid var(--line); color: var(--muted); font-size: 10px; }
   .chats-rail-footer { min-height: 42px; }
   .chats-conversation { display: none; }
   .chats-conversation.has-chat { position: absolute; z-index: 2; inset: 0; display: flex; background: var(--bg); }

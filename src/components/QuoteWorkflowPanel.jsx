@@ -51,7 +51,7 @@ function makeQuoteLine(item = {}) {
   }
 }
 
-function QuoteWorkflowPanel({ chat, account, isStaff, onClose, onQuoteSubmitted }) {
+function QuoteWorkflowPanel({ chat, account, isStaff, isOpen, onClose, onQuoteSubmitted }) {
   const [workflow, setWorkflow] = useState({ quotes: [], order: null })
   const [staff, setStaff] = useState([])
   const [quoteLines, setQuoteLines] = useState(() => chat.items.map((item) => makeQuoteLine(item)))
@@ -80,6 +80,7 @@ function QuoteWorkflowPanel({ chat, account, isStaff, onClose, onQuoteSubmitted 
   const quoteTotal = quoteLines.reduce((total, line) => total + Number(line.quantity || 0) * Number(line.unitPrice || 0), 0)
 
   useEffect(() => {
+    if (!isOpen) return undefined
     let isActive = true
 
     async function loadWorkflow() {
@@ -101,7 +102,7 @@ function QuoteWorkflowPanel({ chat, account, isStaff, onClose, onQuoteSubmitted 
 
     loadWorkflow()
     return () => { isActive = false }
-  }, [chat.id, isStaff])
+  }, [chat.id, isOpen, isStaff])
 
   function updateQuoteLine(key, changes) {
     setQuoteLines((current) => current.map((line) => line.key === key ? { ...line, ...changes } : line))

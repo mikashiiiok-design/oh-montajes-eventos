@@ -549,7 +549,7 @@ function ChatsPage() {
 
       {activeChat && (
         <dialog className="chat-workflow-dialog" ref={workflowDialogRef} onClose={() => setIsWorkflowOpen(false)} onCancel={(event) => { event.preventDefault(); setIsWorkflowOpen(false) }}>
-          <QuoteWorkflowPanel chat={activeChat} account={account} isStaff={isStaff} onClose={() => setIsWorkflowOpen(false)} onQuoteSubmitted={refreshSelectedConversation} />
+          <QuoteWorkflowPanel chat={activeChat} account={account} isStaff={isStaff} isOpen={isWorkflowOpen} onClose={() => setIsWorkflowOpen(false)} onQuoteSubmitted={refreshSelectedConversation} />
         </dialog>
       )}
 

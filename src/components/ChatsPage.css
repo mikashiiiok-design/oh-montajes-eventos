@@ -51,8 +51,10 @@
 .chat-reopen-button { width: 36px; padding: 0; color: #327450; }
 .chat-mobile-back { display: none; width: 36px; padding: 0; }
 .chat-message-list { display: flex; min-height: 0; flex: 1 1 0; flex-direction: column; gap: 14px; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; padding: 22px clamp(16px, 4vw, 54px); scrollbar-gutter: stable; }
-.chat-start-note { display: grid; justify-items: center; gap: 5px; margin: 0 auto 7px; color: var(--muted); font-size: 9px; }
-.chat-start-note span { padding: 6px 9px; border: 1px solid var(--line); background: var(--surface); font-weight: 800; }
+.chat-start-note { display: grid; max-width: min(440px, 100%); justify-items: center; gap: 6px; margin: 0 auto 7px; color: var(--muted); font-size: 9px; text-align: center; }
+.chat-start-note span { padding: 6px 9px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-weight: 800; }
+.chat-start-note p { margin: 0; font-size: 10px; line-height: 1.6; }
+.chat-start-note time { color: var(--muted); font-size: 8px; }
 .chat-message { display: grid; max-width: min(80%, 620px); justify-items: start; gap: 5px; align-self: flex-start; }
 .chat-message.is-own { justify-items: end; align-self: flex-end; }
 .chat-message-author { display: flex; max-width: 100%; flex-wrap: wrap; align-items: center; gap: 7px; color: var(--muted); font-size: 9px; font-weight: 800; }

@@ -358,7 +358,7 @@ function ChatsPage() {
                 : <p className="chats-list-section-empty">{isStaff ? 'No hay chats cerrados.' : 'No tienes cotizaciones cerradas.'}</p>}
             </section>
           </div>
-          {!selectedChatId && <p className="chats-select-prompt">Selecciona un chat para ver la conversación.</p>}
+          {chats.length > 0 && !selectedChatId && <p className="chats-select-prompt">Selecciona un chat para ver la conversación.</p>}
           <div className="chats-rail-footer"><span>{account.name}</span><span>{isStaff ? 'Panel de equipo' : 'Atención OH'}</span></div>
         </aside>
 
@@ -393,7 +393,11 @@ function ChatsPage() {
               </header>
 
               <div className="chat-message-list" ref={messageListRef} onScroll={handleMessageListScroll} aria-live="polite">
-                <div className="chat-start-note"><span>Solicitud creada</span><time>{formatDate.format(new Date(activeChat.createdAt))}</time></div>
+                <div className="chat-start-note">
+                  <span>Cotización creada</span>
+                  <p>Tu cotización ya está en manos del equipo de OH Montajes y Eventos. Te responderemos por este chat; gracias por tu paciencia y mantente atento.</p>
+                  <time>{formatDate.format(new Date(activeChat.createdAt))}</time>
+                </div>
                 {activeChat.messages.map((message) => {
                   const isOwnMessage = String(message.senderId) === String(account.id)
                   const senderName = message.senderName ?? (isOwnMessage ? account.name : 'Equipo OH')

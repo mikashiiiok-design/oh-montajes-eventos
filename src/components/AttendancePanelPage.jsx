@@ -11,7 +11,7 @@ const attendanceOptions = [
   { value: 'absent', label: 'Inasistencia' },
 ]
 
-const allowedRoles = new Set(['owner', 'warehouse_manager', 'secretary', 'employee'])
+const allowedRoles = new Set(['owner', 'accountant', 'warehouse_manager', 'secretary'])
 
 function toDateInputValue(date) {
   const year = date.getFullYear()

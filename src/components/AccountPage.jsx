@@ -21,7 +21,7 @@ function AccountPage() {
   const [developmentPanel, setDevelopmentPanel] = useState('')
   const developmentDialogRef = useRef(null)
 
-  const attendanceRoles = new Set(['owner', 'warehouse_manager', 'secretary', 'employee'])
+  const attendanceRoles = new Set(['owner', 'accountant', 'warehouse_manager', 'secretary'])
   const panelItems = [
     { id: 'admin', label: 'Administración', enabled: account?.role === 'owner' },
     { id: 'attendance', label: 'Lista de asistencia', enabled: attendanceRoles.has(account?.role) },

@@ -25,7 +25,7 @@ const adminRateLimit = rateLimit({
   message: { error: 'Demasiadas consultas administrativas. Espera un momento.' },
 })
 const ownerManagementLockId = 1_993_004
-const attendanceAllowedRoles = new Set(['owner', 'warehouse_manager', 'secretary', 'employee'])
+const attendanceAllowedRoles = new Set(['owner', 'accountant', 'warehouse_manager', 'secretary'])
 const attendanceStatusValues = new Set(['present', 'late', 'late_justified', 'absent'])
 
 router.use((_request, response, next) => {

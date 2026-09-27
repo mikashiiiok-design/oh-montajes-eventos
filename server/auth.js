@@ -169,7 +169,7 @@ router.get('/attendance/workers', verifyOrigin, async (request, response) => {
     return response.status(403).json({ error: 'No tienes permiso para acceder a este panel.' })
   }
 
-  const roles = [...attendanceAllowedRoles].filter((role) => role !== 'owner')
+  const roles = attendanceWorkerRoles
   const result = await pool.query(
     `SELECT id, name, email, role
      FROM customer_accounts
@@ -202,7 +202,7 @@ router.get('/attendance', verifyOrigin, async (request, response) => {
     return response.status(400).json({ error: 'La fecha no es válida.' })
   }
 
-  const roles = [...attendanceAllowedRoles].filter((role) => role !== 'owner')
+  const roles = attendanceWorkerRoles
   const result = await pool.query(
     `SELECT ca.id AS account_id, ca.name, ca.role, ar.status, ar.notes, ar.record_hash
      FROM customer_accounts AS ca
@@ -252,7 +252,7 @@ router.post('/attendance', verifyOrigin, async (request, response) => {
     return response.status(400).json({ error: 'Debes enviar al menos un registro.' })
   }
 
-  const roles = [...attendanceAllowedRoles].filter((role) => role !== 'owner')
+  const roles = attendanceWorkerRoles
   const client = await pool.connect()
   try {
     await client.query('BEGIN')

@@ -27,7 +27,7 @@ function AccountPage() {
     { id: 'attendance', label: 'Lista de asistencia', enabled: attendanceAccessRoles.includes(account?.role) },
     { id: 'furniture', label: 'Mobiliario', enabled: account?.role === 'owner' },
     { id: 'orders', label: 'Registro de pedidos', enabled: account?.role === 'owner' },
-    { id: 'chats', label: 'Chats', enabled: account?.role === 'client' || chatAccessRoles.includes(account?.role) },
+    { id: 'chats', label: 'Chats', enabled: chatAccessRoles.includes(account?.role) },
     { id: 'balance', label: 'Balance', enabled: account?.role === 'owner' },
   ]
 
@@ -177,7 +177,7 @@ function AccountPage() {
               <AccountRoleBadge role={account.role} />
               {notice && <p className="account-notice" role="status">{notice}</p>}
 
-              {visiblePanels.length > 0 && (
+              {account.role !== 'client' && visiblePanels.length > 0 && (
                 <div className="account-panel-group" aria-labelledby="account-panels-title">
                   <div className="account-panel-header">
                     <p className="account-kicker">Paneles</p>

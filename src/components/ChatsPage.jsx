@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { ArrowLeft, Check, Circle, FileText, ImagePlus, LoaderCircle, MessageCircle, Send, UserRound, X } from 'lucide-react'
-import { chatAccessRoles } from '../../shared/roles.js'
+import { chatAccessRoles, getRoleInfo } from '../../shared/roles.js'
 import { apiRequest } from '../utils/api.js'
 import { compressChatImage } from '../utils/compressChatImage.js'
 import companyLogo from '../assets/LOGO-OH.webp'
@@ -14,6 +14,12 @@ const formatCurrency = new Intl.NumberFormat('es-CO', {
 })
 const formatTime = new Intl.DateTimeFormat('es-CO', { hour: '2-digit', minute: '2-digit' })
 const formatDate = new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })
+
+function mergeMessages(currentMessages, refreshedMessages) {
+  const messagesById = new Map(currentMessages.map((message) => [String(message.id), message]))
+  refreshedMessages.forEach((message) => messagesById.set(String(message.id), message))
+  return [...messagesById.values()]
+}
 
 function ChatsPage() {
   const [account, setAccount] = useState(null)
@@ -93,22 +99,36 @@ function ChatsPage() {
     if (!selectedChatId || !isAuthorized) return undefined
 
     let isActive = true
+    let isRefreshing = false
     const refreshConversation = async () => {
+      if (isRefreshing) return
+      isRefreshing = true
       try {
         const { chat } = await apiRequest(`/api/chats/${selectedChatId}`)
         if (isActive) {
-          setActiveChat(chat)
+          setActiveChat((current) => current?.id === chat.id
+            ? { ...chat, messages: mergeMessages(current.messages, chat.messages) }
+            : chat)
           setError('')
         }
       } catch (requestError) {
         if (isActive) setError(requestError.message)
+      } finally {
+        isRefreshing = false
       }
+    }
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') refreshConversation()
     }
     refreshConversation()
     const intervalId = window.setInterval(refreshConversation, 4000)
+    window.addEventListener('focus', refreshWhenVisible)
+    document.addEventListener('visibilitychange', refreshWhenVisible)
     return () => {
       isActive = false
       window.clearInterval(intervalId)
+      window.removeEventListener('focus', refreshWhenVisible)
+      document.removeEventListener('visibilitychange', refreshWhenVisible)
     }
   }, [isAuthorized, selectedChatId])
 
@@ -165,6 +185,13 @@ function ChatsPage() {
       setError(requestError.message)
     } finally {
       setIsSending(false)
+    }
+  }
+
+  function handleComposerKeyDown(event) {
+    if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
+      event.preventDefault()
+      event.currentTarget.form?.requestSubmit()
     }
   }
 
@@ -279,9 +306,14 @@ function ChatsPage() {
                 <div className="chat-start-note"><span>Solicitud creada</span><time>{formatDate.format(new Date(activeChat.createdAt))}</time></div>
                 {activeChat.messages.map((message) => {
                   const isOwnMessage = String(message.senderId) === String(account.id)
+                  const senderName = message.senderName ?? (isOwnMessage ? account.name : 'Equipo OH')
+                  const senderRole = getRoleInfo(message.senderRole)
                   return (
                     <article className={`chat-message${isOwnMessage ? ' is-own' : ''}`} key={message.id}>
-                      {!isOwnMessage && <span className="chat-message-author">{message.senderName ?? 'Equipo OH'}</span>}
+                      <span className="chat-message-author" aria-label={`${senderName}, ${senderRole.label}`}>
+                        {senderName}
+                        <span className="chat-message-role" data-role={senderRole.id} style={{ '--role-color': senderRole.color }}>{senderRole.label}</span>
+                      </span>
                       <div className="chat-message-bubble">
                         {message.body && <p>{message.body}</p>}
                         {message.imageUrl && <a href={message.imageUrl} target="_blank" rel="noreferrer"><img src={message.imageUrl} alt="Imagen adjunta a la conversación" loading="lazy" /></a>}
@@ -307,7 +339,7 @@ function ChatsPage() {
                     <ImagePlus size={19} />
                     <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { setImageFile(event.target.files?.[0] ?? null); event.currentTarget.value = '' }} />
                   </label>
-                  <textarea value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={2000} rows={1} placeholder="Escribe un mensaje…" aria-label="Escribe un mensaje" />
+                  <textarea value={draft} onChange={(event) => setDraft(event.target.value)} onKeyDown={handleComposerKeyDown} maxLength={2000} rows={1} placeholder="Escribe un mensaje…" aria-label="Escribe un mensaje" />
                   <button className="chat-send-button" type="submit" disabled={isSending || (!draft.trim() && !selectedImage)} aria-label="Enviar mensaje" title="Enviar mensaje">
                     {isSending ? <LoaderCircle size={17} className="chats-spinner" /> : <Send size={17} />}
                   </button>

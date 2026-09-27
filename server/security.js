@@ -1,6 +1,7 @@
 const defaultOrigins = [
   'http://localhost:5173',
   'http://127.0.0.1:5173',
+  'https://oh-api-test.onrender.com',
   'https://oh-montajes-eventos.pages.dev',
   'https://www.oh-montajes-eventos.pages.dev',
   'https://render-backend-test.oh-montajes-eventos.pages.dev',
@@ -34,11 +35,12 @@ export function isAllowedHost(hostname) {
     '[::1]',
     'chidalgodev.xyz',
     'www.chidalgodev.xyz',
+    'oh-api-test.onrender.com',
     'oh-montajes-eventos.pages.dev',
     'www.oh-montajes-eventos.pages.dev',
   ])
 
-  if (trustedHosts.has(host) || host.endsWith('.chidalgodev.xyz') || host.endsWith('.pages.dev')) return true
+  if (trustedHosts.has(host) || host.endsWith('.chidalgodev.xyz') || host.endsWith('.pages.dev') || host.endsWith('.onrender.com')) return true
   if (host.endsWith('.localhost')) return true
 
   const privateIpPattern = /^(10\.|127\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.)/
@@ -57,7 +59,7 @@ export function isAllowedOrigin(origin) {
     if (allowedOrigins.has(normalizedOrigin)) return true
     if (isAllowedHost(host)) return true
 
-    if (host.endsWith('.chidalgodev.xyz') || host.endsWith('.pages.dev')) {
+    if (host.endsWith('.chidalgodev.xyz') || host.endsWith('.pages.dev') || host.endsWith('.onrender.com')) {
       return protocol === 'https:'
     }
 

@@ -27,6 +27,7 @@ function ChatsPage() {
   const [activeChat, setActiveChat] = useState(null)
   const [selectedChatId, setSelectedChatId] = useState(() => new URLSearchParams(window.location.search).get('chat'))
   const [draft, setDraft] = useState('')
+  const [isTyping, setIsTyping] = useState(false)
   const [selectedImage, setSelectedImage] = useState(null)
   const [imagePreview, setImagePreview] = useState('')
   const [isLoading, setIsLoading] = useState(true)
@@ -38,9 +39,11 @@ function ChatsPage() {
   const messageListRef = useRef(null)
   const shouldAutoScrollRef = useRef(true)
   const imagePreviewRef = useRef('')
+  const typingTimeoutRef = useRef(null)
   const initialChatIdRef = useRef(selectedChatId)
   const isStaff = staffRoles.has(account?.role)
   const isAuthorized = account?.role === 'client' || isStaff
+  const activeTypingUserIds = activeChat?.typingUsers?.map((user) => user.id).join(',') ?? ''
 
   useEffect(() => {
     const previousTitle = document.title
@@ -134,8 +137,29 @@ function ChatsPage() {
   }, [isAuthorized, selectedChatId])
 
   useEffect(() => {
+    if (!selectedChatId || !isAuthorized || !isTyping) return undefined
+
+    const publishTyping = () => {
+      apiRequest(`/api/chats/${selectedChatId}/typing`, {
+        method: 'POST',
+        body: JSON.stringify({ isTyping: true }),
+      }).catch(() => {})
+    }
+    publishTyping()
+    const intervalId = window.setInterval(publishTyping, 3000)
+
+    return () => {
+      window.clearInterval(intervalId)
+      apiRequest(`/api/chats/${selectedChatId}/typing`, {
+        method: 'POST',
+        body: JSON.stringify({ isTyping: false }),
+      }).catch(() => {})
+    }
+  }, [isAuthorized, isTyping, selectedChatId])
+
+  useEffect(() => {
     if (shouldAutoScrollRef.current) scrollToLatestMessage()
-  }, [activeChat?.messages.length])
+  }, [activeChat?.messages.length, activeTypingUserIds])
 
   useEffect(() => {
     const dialog = invoiceDialogRef.current
@@ -146,6 +170,7 @@ function ChatsPage() {
 
   useEffect(() => () => {
     if (imagePreviewRef.current) URL.revokeObjectURL(imagePreviewRef.current)
+    window.clearTimeout(typingTimeoutRef.current)
   }, [])
 
   function setImageFile(file) {
@@ -153,6 +178,12 @@ function ChatsPage() {
     imagePreviewRef.current = file ? URL.createObjectURL(file) : ''
     setImagePreview(imagePreviewRef.current)
     setSelectedImage(file)
+  }
+
+  function markTyping() {
+    setIsTyping(true)
+    window.clearTimeout(typingTimeoutRef.current)
+    typingTimeoutRef.current = window.setTimeout(() => setIsTyping(false), 2400)
   }
 
   function scrollToLatestMessage() {
@@ -170,6 +201,8 @@ function ChatsPage() {
 
   function selectChat(chatId) {
     const nextId = String(chatId)
+    setIsTyping(false)
+    window.clearTimeout(typingTimeoutRef.current)
     shouldAutoScrollRef.current = true
     setSelectedChatId(nextId)
     setActiveChat(null)
@@ -182,6 +215,7 @@ function ChatsPage() {
     if (!activeChat || (!draft.trim() && !selectedImage) || isSending) return
     setError('')
     setIsSending(true)
+    window.clearTimeout(typingTimeoutRef.current)
 
     try {
       const image = selectedImage ? await compressChatImage(selectedImage) : undefined
@@ -193,12 +227,14 @@ function ChatsPage() {
       setActiveChat((current) => current?.id === activeChat.id
         ? { ...current, messages: [...current.messages, message] }
         : current)
+      setIsTyping(false)
       setDraft('')
       setImageFile(null)
       const { chats: activeChats } = await apiRequest('/api/chats')
       setChats(activeChats)
     } catch (requestError) {
       setError(requestError.message)
+      setIsTyping(false)
     } finally {
       setIsSending(false)
     }
@@ -338,6 +374,23 @@ function ChatsPage() {
                     </article>
                   )
                 })}
+                {activeChat.typingUsers?.length > 0 && (() => {
+                  const typingUser = activeChat.typingUsers[0]
+                  const typingRole = getRoleInfo(typingUser.role)
+                  return (
+                    <article className="chat-message chat-message-typing" role="status" aria-label={`${typingUser.name} está escribiendo`}>
+                      <span className="chat-message-author">
+                        {typingUser.name}
+                        <span className="chat-message-role" data-role={typingRole.id} style={{ '--role-color': typingRole.color }}>{typingRole.label}</span>
+                      </span>
+                      <span className="chat-typing-bubble" aria-hidden="true">
+                        <span />
+                        <span />
+                        <span />
+                      </span>
+                    </article>
+                  )
+                })()}
               </div>
 
               {error && <p className="chat-error" role="alert">{error}</p>}
@@ -352,9 +405,9 @@ function ChatsPage() {
                   )}
                   <label className="chat-attach-button" title="Adjuntar imagen">
                     <ImagePlus size={19} />
-                    <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { setImageFile(event.target.files?.[0] ?? null); event.currentTarget.value = '' }} />
+                    <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { const file = event.target.files?.[0] ?? null; setImageFile(file); if (file) markTyping(); event.currentTarget.value = '' }} />
                   </label>
-                  <textarea value={draft} onChange={(event) => setDraft(event.target.value)} onKeyDown={handleComposerKeyDown} maxLength={2000} rows={1} placeholder="Escribe un mensaje…" aria-label="Escribe un mensaje" />
+                  <textarea value={draft} onChange={(event) => { setDraft(event.target.value); markTyping() }} onKeyDown={handleComposerKeyDown} maxLength={2000} rows={1} placeholder="Escribe un mensaje…" aria-label="Escribe un mensaje" />
                   <button className="chat-send-button" type="submit" disabled={isSending || (!draft.trim() && !selectedImage)} aria-label="Enviar mensaje" title="Enviar mensaje">
                     {isSending ? <LoaderCircle size={17} className="chats-spinner" /> : <Send size={17} />}
                   </button>

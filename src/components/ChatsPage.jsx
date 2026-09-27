@@ -462,7 +462,12 @@ function ChatsPage() {
                           <div className="chat-quote-embed-main">
                             <div className="chat-quote-embed-heading"><span>OH / COTIZACIÓN</span><small data-status={message.quote.status}>{quoteStatusLabels[message.quote.status]}</small></div>
                             <strong className="chat-quote-embed-title">Cotización · versión {message.quote.version}</strong>
+                            <div className="chat-quote-embed-event"><strong>{message.quote.eventName}</strong><span>{message.quote.venue}</span></div>
                             <div className="chat-quote-embed-dates"><span>Montaje <b>{formatDateTime.format(new Date(message.quote.setupAt))}</b></span><span>Desmontaje <b>{formatDateTime.format(new Date(message.quote.dismantleAt))}</b></span></div>
+                            <div className="chat-quote-embed-subtotal"><span>Subtotal de líneas</span><strong>{formatCurrency.format(Number(message.quote.subtotalAmount))}</strong></div>
+                            {Number(message.quote.adjustmentAmount) !== 0 && (
+                              <div className="chat-quote-embed-adjustment"><span>Ajuste <b>{formatCurrency.format(Number(message.quote.adjustmentAmount))}</b></span>{message.quote.adjustmentNote && <small>{message.quote.adjustmentNote}</small>}</div>
+                            )}
                             <div className="chat-quote-embed-total"><span>Precio final</span><strong>{formatCurrency.format(Number(message.quote.totalAmount))}</strong></div>
                             <div className="chat-quote-embed-actions">
                               <button className="chat-quote-view-button" type="button" onClick={() => setIsWorkflowOpen(true)}>Ver cotización</button>

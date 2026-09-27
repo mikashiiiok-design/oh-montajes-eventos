@@ -27,7 +27,14 @@
 .quote-status.is-sent { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); color: var(--accent); }
 .quote-status.is-accepted { border-color: color-mix(in srgb, #38855e 45%, var(--line)); color: #38855e; }
 .quote-status.is-superseded { opacity: .7; }
+.quote-version-event { display: grid; gap: 3px; padding: 8px 9px; border-left: 2px solid var(--accent); background: var(--bg); }
+.quote-version-event strong { font-size: 10px; }
+.quote-version-event span { color: var(--muted); font-size: 9px; }
 .quote-version-items { display: grid; }
+.quote-version-adjustment { display: grid; gap: 4px; padding: 8px 0; border-top: 1px solid var(--line); color: var(--muted); font-size: 9px; }
+.quote-version-adjustment > span { display: flex; justify-content: space-between; gap: 12px; }
+.quote-version-adjustment b { color: var(--text); font-variant-numeric: tabular-nums; }
+.quote-version-adjustment small { font-size: 8px; line-height: 1.5; }
 .quote-version-item { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 8px 0; border-top: 1px solid var(--line); }
 .quote-version-item > div { display: grid; min-width: 0; gap: 3px; }
 .quote-version-item > div strong, .quote-version-item > span { font-size: 10px; }
@@ -69,14 +76,26 @@
 .quote-terms-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 10px; }
 .quote-terms-grid label:first-child { grid-column: 1 / -1; }
 .quote-terms-grid label textarea { min-height: 68px; padding: 8px 9px; resize: vertical; line-height: 1.5; }
-.quote-create-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 11px; border-top: 1px solid var(--line); }
-.quote-create-footer > div { display: grid; gap: 2px; }
+.quote-create-footer { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 14px; padding-top: 11px; border-top: 1px solid var(--line); }
+.quote-create-footer > div { display: grid; gap: 5px; }
 .quote-create-footer > div span { color: var(--muted); font-size: 8px; font-weight: 800; text-transform: uppercase; }
 .quote-create-footer > div strong { font-size: 17px; font-variant-numeric: tabular-nums; }
+.quote-price-controls label { display: grid; gap: 4px; color: var(--text); font-size: 9px; font-weight: 800; }
+.quote-price-controls input, .quote-adjustment-reason input { width: min(100%, 260px); min-height: 38px; padding: 0 10px; border: 1px solid var(--line); background: var(--bg); color: var(--text); font: inherit; font-size: 12px; font-variant-numeric: tabular-nums; }
+.quote-price-controls small { color: var(--muted); font-size: 8px; }
+.quote-price-controls .quote-adjustment-preview { color: var(--accent); text-transform: none; }
+.quote-price-controls .quote-adjustment-preview strong { color: var(--accent); font-size: 10px; }
+.quote-adjustment-reason { display: grid; min-width: 150px; flex: 1; gap: 5px; color: var(--muted); font-size: 8px; font-weight: 800; }
+.quote-adjustment-reason input { width: 100%; font-size: 10px; }
 .quote-send-button { min-height: 40px; background: var(--accent); color: var(--on-accent); }
 .quote-send-button:hover:not(:disabled) { filter: brightness(.96); }
 .quote-order-section { padding-bottom: 24px; }
 .order-create-form { grid-template-columns: 1fr 1fr; }
+.order-accepted-event { display: grid; grid-column: 1 / -1; gap: 4px; padding: 11px 12px; border-left: 2px solid #38855e; background: var(--bg); }
+.order-accepted-event p { margin: 0; }
+.order-accepted-event > strong { font-size: 11px; }
+.order-accepted-event > span { color: var(--muted); font-size: 10px; }
+.order-accepted-event > small { color: var(--muted); font-size: 8px; }
 .order-create-form > label { align-content: start; }
 .order-create-form > label:nth-child(1), .order-create-form > label:nth-child(2), .order-date-grid, .order-task-assignments, .order-create-button { grid-column: 1 / -1; }
 .order-date-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }

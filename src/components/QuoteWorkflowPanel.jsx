@@ -51,11 +51,21 @@ function makeQuoteLine(item = {}) {
   }
 }
 
+function toDateTimeLocal(value) {
+  if (!value) return ''
+  const date = new Date(value)
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+}
+
 function QuoteWorkflowPanel({ chat, account, isStaff, isOpen, onClose, onQuoteSubmitted }) {
   const [workflow, setWorkflow] = useState({ quotes: [], order: null })
   const [staff, setStaff] = useState([])
   const [quoteLines, setQuoteLines] = useState(() => chat.items.map((item) => makeQuoteLine(item)))
   const [quoteTerms, setQuoteTerms] = useState('')
+  const [quoteEventName, setQuoteEventName] = useState('')
+  const [quoteVenue, setQuoteVenue] = useState('')
+  const [quoteFinalAmount, setQuoteFinalAmount] = useState('')
+  const [adjustmentNote, setAdjustmentNote] = useState('')
   const [quoteSetupAt, setQuoteSetupAt] = useState('')
   const [quoteDismantleAt, setQuoteDismantleAt] = useState('')
   const [orderDraft, setOrderDraft] = useState({
@@ -77,7 +87,13 @@ function QuoteWorkflowPanel({ chat, account, isStaff, isOpen, onClose, onQuoteSu
 
   const latestQuote = workflow.quotes[0] ?? null
   const acceptedQuote = workflow.quotes.find((quote) => quote.status === 'accepted')
-  const quoteTotal = quoteLines.reduce((total, line) => total + Number(line.quantity || 0) * Number(line.unitPrice || 0), 0)
+  const quoteSubtotal = quoteLines.reduce((total, line) => total + Number(line.quantity || 0) * Number(line.unitPrice || 0), 0)
+  const quoteTotal = quoteFinalAmount === '' ? quoteSubtotal : Number(quoteFinalAmount)
+  const quoteAdjustment = quoteTotal - quoteSubtotal
+  const orderEventName = acceptedQuote?.event_name ?? orderDraft.eventName
+  const orderVenue = acceptedQuote?.venue ?? orderDraft.venue
+  const orderSetupAt = toDateTimeLocal(acceptedQuote?.setup_at) || orderDraft.setupAt
+  const orderDismantleAt = toDateTimeLocal(acceptedQuote?.dismantle_at) || orderDraft.dismantleAt
 
   useEffect(() => {
     if (!isOpen) return undefined
@@ -126,6 +142,18 @@ function QuoteWorkflowPanel({ chat, account, isStaff, isOpen, onClose, onQuoteSu
       setError('Indica fechas válidas de montaje y desmontaje, en ese orden.')
       return
     }
+    if (!quoteEventName.trim() || !quoteVenue.trim()) {
+      setError('Indica el nombre del evento y el lugar antes de enviar la cotización.')
+      return
+    }
+    if (!Number.isSafeInteger(quoteTotal) || quoteTotal < 0) {
+      setError('El precio final debe ser un importe válido.')
+      return
+    }
+    if (quoteAdjustment !== 0 && !adjustmentNote.trim()) {
+      setError('Explica el motivo del ajuste al subtotal.')
+      return
+    }
     setError('')
     setNotice('')
     setIsSaving(true)
@@ -143,6 +171,10 @@ function QuoteWorkflowPanel({ chat, account, isStaff, isOpen, onClose, onQuoteSu
             unitPrice: Number(line.unitPrice),
             customizations: Object.fromEntries(Object.entries(line.customizations).filter(([, value]) => value.trim())),
           })),
+          eventName: quoteEventName,
+          venue: quoteVenue,
+          totalAmount: quoteTotal,
+          adjustmentNote,
           terms: quoteTerms,
           setupAt: toIsoString(quoteSetupAt),
           dismantleAt: toIsoString(quoteDismantleAt),
@@ -204,9 +236,11 @@ function QuoteWorkflowPanel({ chat, account, isStaff, isOpen, onClose, onQuoteSu
         method: 'POST',
         body: JSON.stringify({
           ...orderDraft,
-          setupAt: toIsoString(orderDraft.setupAt),
+          eventName: orderEventName,
+          venue: orderVenue,
+          setupAt: toIsoString(orderSetupAt),
           eventAt: toIsoString(orderDraft.eventAt),
-          dismantleAt: toIsoString(orderDraft.dismantleAt),
+          dismantleAt: toIsoString(orderDismantleAt),
         }),
       })
       await refreshWorkflow()
@@ -276,6 +310,7 @@ function QuoteWorkflowPanel({ chat, account, isStaff, isOpen, onClose, onQuoteSu
                   <div><strong>Versión {quote.version}</strong><span className={`quote-status is-${quote.status}`}>{quoteStatuses[quote.status]}</span></div>
                   <strong className="quote-version-total">{formatCurrency.format(Number(quote.total_amount))}</strong>
                 </header>
+                <div className="quote-version-event"><strong>{quote.event_name}</strong><span>{quote.venue}</span></div>
                 <div className="quote-version-items">
                   {quote.items.map((item) => (
                     <div className="quote-version-item" key={item.id}>
@@ -286,6 +321,12 @@ function QuoteWorkflowPanel({ chat, account, isStaff, isOpen, onClose, onQuoteSu
                     </div>
                   ))}
                 </div>
+                {Number(quote.adjustment_amount) !== 0 && (
+                  <div className="quote-version-adjustment">
+                    <span>Ajuste sobre subtotal <b>{formatCurrency.format(Number(quote.adjustment_amount))}</b></span>
+                    {quote.adjustment_note && <small>{quote.adjustment_note}</small>}
+                  </div>
+                )}
                 {quote.terms && <p className="quote-version-terms">{quote.terms}</p>}
                 <footer className="quote-version-footer">
                   <span>Enviada por {quote.created_by_name} · {formatDate.format(new Date(quote.created_at))}</span>
@@ -349,11 +390,19 @@ function QuoteWorkflowPanel({ chat, account, isStaff, isOpen, onClose, onQuoteSu
                 <button className="quote-add-line" type="button" onClick={() => setQuoteLines((current) => [...current, makeQuoteLine()])}><Plus size={15} /> Agregar artículo o servicio</button>
                 <div className="quote-terms-grid">
                   <label>Condiciones<textarea maxLength={2000} rows={3} value={quoteTerms} onChange={(event) => setQuoteTerms(event.target.value)} placeholder="Disponibilidad, transporte, montaje u otras condiciones acordadas." /></label>
+                  <label>Feria o evento<input maxLength={160} required value={quoteEventName} onChange={(event) => setQuoteEventName(event.target.value)} placeholder="Nombre del evento" /></label>
+                  <label>Lugar<input maxLength={240} required value={quoteVenue} onChange={(event) => setQuoteVenue(event.target.value)} placeholder="Recinto, pabellón y dirección" /></label>
                   <label>Fecha y hora de montaje<input type="datetime-local" required value={quoteSetupAt} onChange={(event) => setQuoteSetupAt(event.target.value)} /></label>
                   <label>Fecha y hora de desmontaje<input type="datetime-local" required value={quoteDismantleAt} onChange={(event) => setQuoteDismantleAt(event.target.value)} /></label>
                 </div>
                 <div className="quote-create-footer">
-                  <div><span>Total final</span><strong>{formatCurrency.format(quoteTotal)}</strong></div>
+                  <div className="quote-price-controls">
+                    <span>Subtotal de líneas <strong>{formatCurrency.format(quoteSubtotal)}</strong></span>
+                    <label>Precio final acordado<input type="number" min="0" max="10000000000000" step="1000" value={quoteFinalAmount} placeholder={String(quoteSubtotal)} onChange={(event) => setQuoteFinalAmount(event.target.value)} /></label>
+                    <small>Si lo dejas vacío, se usará el subtotal de las líneas.</small>
+                    {quoteAdjustment !== 0 && <span className="quote-adjustment-preview">Ajuste <strong>{formatCurrency.format(quoteAdjustment)}</strong></span>}
+                  </div>
+                  {quoteAdjustment !== 0 && <label className="quote-adjustment-reason">Motivo del ajuste<input maxLength={500} required value={adjustmentNote} onChange={(event) => setAdjustmentNote(event.target.value)} placeholder="Descuento, disponibilidad, costos adicionales…" /></label>}
                   <button className="quote-send-button" type="submit" disabled={isSaving || quoteLines.length === 0 || quoteTotal <= 0}>
                     {isSaving ? <LoaderCircle size={16} className="chats-spinner" /> : <Send size={15} />} Enviar cotización
                   </button>
@@ -375,12 +424,13 @@ function QuoteWorkflowPanel({ chat, account, isStaff, isOpen, onClose, onQuoteSu
             {!workflow.order && !acceptedQuote && <p className="quote-workflow-empty">El pedido solo se crea después de que el cliente acepta una cotización.</p>}
             {isStaff && acceptedQuote && !workflow.order && (
               <form className="order-create-form" onSubmit={createOrder}>
-                <label>Nombre de la feria o evento<input maxLength={160} required value={orderDraft.eventName} onChange={(event) => setOrderDraft((current) => ({ ...current, eventName: event.target.value }))} placeholder="Nombre oficial del evento" /></label>
-                <label>Lugar y dirección<input maxLength={240} required value={orderDraft.venue} onChange={(event) => setOrderDraft((current) => ({ ...current, venue: event.target.value }))} placeholder="Recinto, pabellón y dirección" /></label>
+                <div className="order-accepted-event"><p className="quote-workflow-kicker">DATOS DE LA COTIZACIÓN ACEPTADA</p><strong>{orderEventName}</strong><span>{orderVenue}</span><small>Evento, lugar y fechas de montaje/desmontaje se copian automáticamente.</small></div>
+                {!acceptedQuote.event_name && <label>Nombre de la feria o evento<input maxLength={160} required value={orderEventName} onChange={(event) => setOrderDraft((current) => ({ ...current, eventName: event.target.value }))} placeholder="Nombre oficial del evento" /></label>}
+                {!acceptedQuote.venue && <label>Lugar y dirección<input maxLength={240} required value={orderVenue} onChange={(event) => setOrderDraft((current) => ({ ...current, venue: event.target.value }))} placeholder="Recinto, pabellón y dirección" /></label>}
                 <div className="order-date-grid">
-                  <label>Montaje<input type="datetime-local" required value={orderDraft.setupAt} onChange={(event) => setOrderDraft((current) => ({ ...current, setupAt: event.target.value }))} /></label>
+                  <label>Montaje<input type="datetime-local" required readOnly={Boolean(acceptedQuote.setup_at)} value={orderSetupAt} onChange={(event) => setOrderDraft((current) => ({ ...current, setupAt: event.target.value }))} /></label>
                   <label>Evento<input type="datetime-local" required value={orderDraft.eventAt} onChange={(event) => setOrderDraft((current) => ({ ...current, eventAt: event.target.value }))} /></label>
-                  <label>Desmontaje<input type="datetime-local" required value={orderDraft.dismantleAt} onChange={(event) => setOrderDraft((current) => ({ ...current, dismantleAt: event.target.value }))} /></label>
+                  <label>Desmontaje<input type="datetime-local" required readOnly={Boolean(acceptedQuote.dismantle_at)} value={orderDismantleAt} onChange={(event) => setOrderDraft((current) => ({ ...current, dismantleAt: event.target.value }))} /></label>
                 </div>
                 <label>Coordinación general<select required value={orderDraft.coordinatorId} onChange={(event) => setOrderDraft((current) => ({ ...current, coordinatorId: event.target.value }))}>
                   <option value="">Seleccionar responsable</option>

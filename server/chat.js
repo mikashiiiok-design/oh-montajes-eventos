@@ -1,11 +1,12 @@
 import express from 'express'
 import { pool } from './db.js'
 import { resolveSessionAccount, verifyOrigin } from './auth.js'
-import { chatAccessRoles } from '../shared/roles.js'
+import { chatAccessRoles, chatReopenRoles } from '../shared/roles.js'
 import { galleryCategories } from '../src/data/gallery.js'
 
 const router = express.Router()
 const staffRoles = new Set(chatAccessRoles)
+const reopenRoles = new Set(chatReopenRoles)
 const allowedClientRoles = new Set(['client', ...chatAccessRoles])
 const maximumImageBytes = 320 * 1024
 const productsById = new Map(
@@ -370,6 +371,24 @@ router.post('/:chatId/close', verifyOrigin, async (request, response) => {
   if (!result.rowCount) return response.status(404).json({ error: 'El chat ya está cerrado o no existe.' })
   await pool.query('DELETE FROM chat_typing_status WHERE chat_id = $1', [chatId])
   return response.json({ status: 'closed' })
+})
+
+router.post('/:chatId/reopen', verifyOrigin, async (request, response) => {
+  const account = await getAuthorizedAccount(request, response)
+  if (!account) return
+  if (!reopenRoles.has(account.role)) {
+    return response.status(403).json({ error: 'No tienes permiso para reabrir conversaciones.' })
+  }
+
+  const chatId = parseId(request.params.chatId)
+  if (!chatId) return response.status(400).json({ error: 'El identificador del chat no es válido.' })
+  const result = await pool.query(
+    `UPDATE chat_conversations SET status = 'open', closed_at = NULL
+     WHERE id = $1 AND status = 'closed' RETURNING id`,
+    [chatId],
+  )
+  if (!result.rowCount) return response.status(404).json({ error: 'La conversación no existe o ya está abierta.' })
+  return response.json({ status: 'open' })
 })
 
 export default router

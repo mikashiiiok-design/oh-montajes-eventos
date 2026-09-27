@@ -324,10 +324,6 @@ function AttendancePanelPage() {
             </div>
           )}
 
-<<<<<<< HEAD
-          <div className="attendance-actions">
-            <button type="button" onClick={handleSave} className="attendance-save" disabled={isSaving || !hasUnsavedChanges || visibleWorkers.length === 0}>
-=======
           <div className="attendance-panel-actions">
             <button
               type="button"

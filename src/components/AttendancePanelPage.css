@@ -198,7 +198,9 @@
   align-items: center;
   justify-content: flex-end;
   gap: 10px;
+  width: max-content;
   margin-left: auto;
+  justify-self: end;
 }
 
 .attendance-panel-table-heading-label {

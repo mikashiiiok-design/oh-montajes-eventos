@@ -61,3 +61,10 @@ export const accountRoles = [
 
 export const accountRoleIds = accountRoles.map(({ id }) => id)
 export const accountRoleById = Object.fromEntries(accountRoles.map((role) => [role.id, role]))
+
+export const attendanceAccessRoles = ['owner', 'accountant', 'warehouse_manager', 'secretary']
+export const attendanceWorkerRoles = ['accountant', 'warehouse_manager', 'secretary', 'employee']
+
+export function getRoleInfo(role) {
+  return accountRoleById[role] ?? accountRoleById[defaultAccountRole]
+}

@@ -176,17 +176,38 @@ export async function initializeDatabase() {
       id BIGSERIAL PRIMARY KEY,
       chat_id BIGINT NOT NULL REFERENCES chat_conversations(id) ON DELETE CASCADE,
       version INTEGER NOT NULL CHECK (version > 0),
-      status VARCHAR(16) NOT NULL CHECK (status IN ('sent', 'accepted', 'superseded')),
+      status VARCHAR(16) NOT NULL CHECK (status IN ('sent', 'accepted', 'rejected', 'superseded')),
       total_amount BIGINT NOT NULL CHECK (total_amount >= 0),
       currency CHAR(3) NOT NULL DEFAULT 'COP',
       terms VARCHAR(2000) NOT NULL DEFAULT '',
       valid_until DATE,
+      setup_at TIMESTAMPTZ,
+      dismantle_at TIMESTAMPTZ,
       created_by BIGINT NOT NULL REFERENCES customer_accounts(id) ON DELETE RESTRICT,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       accepted_by BIGINT REFERENCES customer_accounts(id) ON DELETE SET NULL,
       accepted_at TIMESTAMPTZ,
+      rejected_by BIGINT REFERENCES customer_accounts(id) ON DELETE SET NULL,
+      rejected_at TIMESTAMPTZ,
+      rejection_reason VARCHAR(1000),
       UNIQUE (chat_id, version)
     )
+  `)
+
+  await pool.query(`
+    ALTER TABLE chat_quote_versions
+    ADD COLUMN IF NOT EXISTS setup_at TIMESTAMPTZ,
+    ADD COLUMN IF NOT EXISTS dismantle_at TIMESTAMPTZ,
+    ADD COLUMN IF NOT EXISTS rejected_by BIGINT REFERENCES customer_accounts(id) ON DELETE SET NULL,
+    ADD COLUMN IF NOT EXISTS rejected_at TIMESTAMPTZ,
+    ADD COLUMN IF NOT EXISTS rejection_reason VARCHAR(1000)
+  `)
+
+  await pool.query('ALTER TABLE chat_quote_versions DROP CONSTRAINT IF EXISTS chat_quote_versions_status_check')
+  await pool.query(`
+    ALTER TABLE chat_quote_versions
+    ADD CONSTRAINT chat_quote_versions_status_check
+    CHECK (status IN ('sent', 'accepted', 'rejected', 'superseded'))
   `)
 
   await pool.query(`
@@ -206,6 +227,24 @@ export async function initializeDatabase() {
       quantity SMALLINT NOT NULL CHECK (quantity BETWEEN 1 AND 99),
       customizations JSONB NOT NULL DEFAULT '{}'::jsonb CHECK (jsonb_typeof(customizations) = 'object')
     )
+  `)
+
+  await pool.query(`
+    ALTER TABLE chat_messages
+    ADD COLUMN IF NOT EXISTS message_type VARCHAR(16) NOT NULL DEFAULT 'text',
+    ADD COLUMN IF NOT EXISTS quote_version_id BIGINT REFERENCES chat_quote_versions(id) ON DELETE SET NULL
+  `)
+
+  await pool.query('ALTER TABLE chat_messages DROP CONSTRAINT IF EXISTS chat_messages_message_type_check')
+  await pool.query(`
+    ALTER TABLE chat_messages
+    ADD CONSTRAINT chat_messages_message_type_check
+    CHECK (message_type IN ('text', 'quote'))
+  `)
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS chat_messages_quote_idx
+    ON chat_messages (quote_version_id) WHERE quote_version_id IS NOT NULL
   `)
 
   await pool.query(`

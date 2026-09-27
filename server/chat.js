@@ -171,6 +171,12 @@ router.get('/:chatId', verifyOrigin, async (request, response) => {
       `SELECT message.id, message.sender_id, sender.name AS sender_name,
               sender.role AS sender_role, message.body,
               message.image_data IS NOT NULL AS has_image, message.created_at,
+              message.message_type, quote.id AS quote_id,
+              quote.version AS quote_version, quote.status AS quote_status,
+              quote.total_amount AS quote_total_amount,
+              quote.setup_at AS quote_setup_at, quote.dismantle_at AS quote_dismantle_at,
+              quote.version = (SELECT MAX(version) FROM chat_quote_versions
+                   WHERE chat_id = message.chat_id) AS quote_is_latest,
               CASE WHEN message.sender_id = $2 THEN EXISTS (
                 SELECT 1 FROM chat_read_status AS read_status
                 WHERE read_status.chat_id = message.chat_id
@@ -179,6 +185,7 @@ router.get('/:chatId', verifyOrigin, async (request, response) => {
               ) ELSE FALSE END AS is_read
        FROM chat_messages AS message
        LEFT JOIN customer_accounts AS sender ON sender.id = message.sender_id
+      LEFT JOIN chat_quote_versions AS quote ON quote.id = message.quote_version_id
        WHERE message.chat_id = $1 ORDER BY message.created_at ASC, message.id ASC`,
       [chatId, account.id],
     ),
@@ -213,9 +220,19 @@ router.get('/:chatId', verifyOrigin, async (request, response) => {
         senderName: message.sender_name,
         senderRole: message.sender_role,
         body: message.body,
+        type: message.message_type,
         imageUrl: message.has_image ? `/api/chats/messages/${message.id}/image` : null,
         createdAt: message.created_at,
         isRead: message.is_read,
+        quote: message.quote_id ? {
+          id: message.quote_id,
+          version: message.quote_version,
+          status: message.quote_status,
+          totalAmount: message.quote_total_amount,
+          setupAt: message.quote_setup_at,
+          dismantleAt: message.quote_dismantle_at,
+          isLatest: message.quote_is_latest,
+        } : null,
       })),
     },
   })

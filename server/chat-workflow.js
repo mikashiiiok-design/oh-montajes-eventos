@@ -125,13 +125,16 @@ router.get('/', async (request, response) => {
   const { account, chat } = authorized
 
   const quotesResult = await pool.query(
-    `SELECT quote.id, quote.version, quote.status, quote.total_amount,
-            quote.currency, quote.terms, quote.valid_until, quote.created_at,
-            quote.accepted_at, quote.created_by, creator.name AS created_by_name,
-            quote.accepted_by, accepter.name AS accepted_by_name
+        `SELECT quote.id, quote.version, quote.status, quote.total_amount,
+          quote.currency, quote.terms, quote.setup_at, quote.dismantle_at, quote.created_at,
+                 quote.accepted_at, quote.created_by, creator.name AS created_by_name,
+                 quote.accepted_by, accepter.name AS accepted_by_name,
+                 quote.rejected_at, quote.rejection_reason, quote.rejected_by,
+                 rejecter.name AS rejected_by_name
      FROM chat_quote_versions AS quote
      JOIN customer_accounts AS creator ON creator.id = quote.created_by
      LEFT JOIN customer_accounts AS accepter ON accepter.id = quote.accepted_by
+               LEFT JOIN customer_accounts AS rejecter ON rejecter.id = quote.rejected_by
      WHERE quote.chat_id = $1
      ORDER BY quote.version DESC`,
     [chat.id],
@@ -209,9 +212,10 @@ router.post('/quotes', async (request, response) => {
   if (!parsedItems) return response.status(400).json({ error: 'Revisa los productos, cantidades, precios y personalizaciones.' })
   const terms = typeof request.body?.terms === 'string' ? request.body.terms.trim() : ''
   if (terms.length > 2000) return response.status(400).json({ error: 'Las condiciones no pueden superar 2.000 caracteres.' })
-  const validUntil = request.body?.validUntil || null
-  if (validUntil && (typeof validUntil !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(validUntil) || Number.isNaN(Date.parse(`${validUntil}T00:00:00Z`)))) {
-    return response.status(400).json({ error: 'La fecha de vigencia no es válida.' })
+  const setupAt = parseDateTime(request.body?.setupAt)
+  const dismantleAt = parseDateTime(request.body?.dismantleAt)
+  if (!setupAt || !dismantleAt || setupAt > dismantleAt) {
+    return response.status(400).json({ error: 'Indica fechas válidas de montaje y desmontaje, en ese orden.' })
   }
 
   const client = await pool.connect()
@@ -248,10 +252,10 @@ router.post('/quotes', async (request, response) => {
     )
     const quote = await client.query(
       `INSERT INTO chat_quote_versions
-       (chat_id, version, status, total_amount, terms, valid_until, created_by)
-       VALUES ($1, $2, 'sent', $3, $4, $5, $6)
+       (chat_id, version, status, total_amount, terms, setup_at, dismantle_at, created_by)
+       VALUES ($1, $2, 'sent', $3, $4, $5, $6, $7)
        RETURNING id`,
-      [chat.id, version, parsedItems.total, terms, validUntil, account.id],
+      [chat.id, version, parsedItems.total, terms, setupAt.toISOString(), dismantleAt.toISOString(), account.id],
     )
     const quoteId = quote.rows[0].id
 
@@ -266,9 +270,9 @@ router.post('/quotes', async (request, response) => {
       )
     }
     await client.query(
-      `INSERT INTO chat_messages (chat_id, sender_id, body)
-       VALUES ($1, $2, $3)`,
-      [chat.id, account.id, `Cotización versión ${version} enviada para revisión.`],
+      `INSERT INTO chat_messages (chat_id, sender_id, body, message_type, quote_version_id)
+       VALUES ($1, $2, $3, 'quote', $4)`,
+      [chat.id, account.id, `Cotización versión ${version}`, quoteId],
     )
     await client.query('UPDATE chat_conversations SET last_message_at = NOW() WHERE id = $1', [chat.id])
     await client.query('COMMIT')
@@ -344,6 +348,71 @@ router.post('/quotes/:quoteId/accept', async (request, response) => {
     await client.query('UPDATE chat_conversations SET last_message_at = NOW() WHERE id = $1', [chat.id])
     await client.query('COMMIT')
     return response.json({ status: 'accepted' })
+  } catch (error) {
+    await client.query('ROLLBACK')
+    throw error
+  } finally {
+    client.release()
+  }
+})
+
+router.post('/quotes/:quoteId/reject', async (request, response) => {
+  const authorized = await authorizeChat(request, response)
+  if (!authorized) return
+  const { account, chat } = authorized
+  if (account.role !== 'client') {
+    return response.status(403).json({ error: 'Solo el cliente puede rechazar la cotización.' })
+  }
+  if (chat.status !== 'open') {
+    return response.status(409).json({ error: 'La conversación está cerrada.' })
+  }
+  const quoteId = parseId(request.params.quoteId)
+  if (!quoteId) return response.status(400).json({ error: 'El identificador de cotización no es válido.' })
+  const reason = typeof request.body?.reason === 'string' ? request.body.reason.trim() : ''
+  if (reason.length > 1000) return response.status(400).json({ error: 'El motivo no puede superar 1.000 caracteres.' })
+
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
+    const lockedChat = await client.query(
+      'SELECT status FROM chat_conversations WHERE id = $1 AND customer_id = $2 FOR UPDATE',
+      [chat.id, account.id],
+    )
+    if (lockedChat.rows[0]?.status !== 'open') {
+      await client.query('ROLLBACK')
+      return response.status(409).json({ error: 'La conversación está cerrada.' })
+    }
+    const quote = await client.query(
+      `SELECT id, version, status FROM chat_quote_versions
+       WHERE id = $1 AND chat_id = $2 FOR UPDATE`,
+      [quoteId, chat.id],
+    )
+    if (!quote.rowCount || quote.rows[0].status !== 'sent') {
+      await client.query('ROLLBACK')
+      return response.status(409).json({ error: 'Esta cotización ya no está pendiente de respuesta.' })
+    }
+    const latest = await client.query(
+      'SELECT MAX(version)::integer AS version FROM chat_quote_versions WHERE chat_id = $1',
+      [chat.id],
+    )
+    if (quote.rows[0].version !== latest.rows[0].version) {
+      await client.query('ROLLBACK')
+      return response.status(409).json({ error: 'Hay una versión más reciente para revisar.' })
+    }
+    await client.query(
+      `UPDATE chat_quote_versions
+       SET status = 'rejected', rejected_by = $2, rejected_at = NOW(), rejection_reason = $3
+       WHERE id = $1`,
+      [quoteId, account.id, reason || null],
+    )
+    await client.query(
+      `INSERT INTO chat_messages (chat_id, sender_id, body)
+       VALUES ($1, $2, $3)`,
+      [chat.id, account.id, reason ? `Cotización versión ${quote.rows[0].version} rechazada. Motivo: ${reason}` : `Cotización versión ${quote.rows[0].version} rechazada.`],
+    )
+    await client.query('UPDATE chat_conversations SET last_message_at = NOW() WHERE id = $1', [chat.id])
+    await client.query('COMMIT')
+    return response.json({ status: 'rejected' })
   } catch (error) {
     await client.query('ROLLBACK')
     throw error

@@ -21,7 +21,7 @@ import { useSmoothAnchorNavigation } from './hooks/useSmoothAnchorNavigation.js'
 import './portfolio.css'
 
 const THEME_STORAGE_KEY = 'oh-theme'
-const MAINTENANCE_MODE = false
+const MAINTENANCE_MODE = true
 
 function getInitialTheme() {
   const savedTheme = window.localStorage.getItem(THEME_STORAGE_KEY)

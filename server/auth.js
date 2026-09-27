@@ -26,6 +26,7 @@ const adminRateLimit = rateLimit({
 })
 const ownerManagementLockId = 1_993_004
 const attendanceAllowedRoles = new Set(['owner', 'accountant', 'warehouse_manager', 'secretary'])
+const attendanceWorkerRoles = ['accountant', 'warehouse_manager', 'secretary', 'employee']
 const attendanceStatusValues = new Set(['present', 'late', 'late_justified', 'absent'])
 
 router.use((_request, response, next) => {
@@ -256,7 +257,6 @@ router.get('/attendance/workers', verifyOrigin, async (request, response) => {
     return response.status(403).json({ error: 'No tienes permiso para acceder a este panel.' })
   }
 
-  const attendanceWorkerRoles = [...attendanceAllowedRoles].filter((role) => role !== 'owner')
   const result = await pool.query(
     `SELECT id, name, email, role
      FROM customer_accounts
@@ -284,7 +284,6 @@ router.get('/attendance', verifyOrigin, async (request, response) => {
     return response.status(400).json({ error: 'La fecha no es válida.' })
   }
 
-  const attendanceWorkerRoles = [...attendanceAllowedRoles].filter((role) => role !== 'owner')
   const result = await pool.query(
     `SELECT ca.id AS account_id, ca.name, ca.role, ar.status, ar.notes, ar.record_hash
      FROM customer_accounts AS ca
@@ -324,7 +323,6 @@ router.post('/attendance', verifyOrigin, async (request, response) => {
     return response.status(400).json({ error: 'Debes enviar al menos un registro.' })
   }
 
-  const attendanceWorkerRoles = [...attendanceAllowedRoles].filter((role) => role !== 'owner')
   const client = await pool.connect()
   try {
     await client.query('BEGIN')

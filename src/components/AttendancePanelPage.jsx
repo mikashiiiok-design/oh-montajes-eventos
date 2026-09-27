@@ -13,6 +13,7 @@ const attendanceOptions = [
 
 const accessRoles = new Set(['owner', 'accountant', 'warehouse_manager', 'secretary'])
 const workerRoles = new Set(['accountant', 'warehouse_manager', 'secretary', 'employee'])
+const attendanceWorkerRoles = ['accountant', 'warehouse_manager', 'secretary', 'employee']
 
 function toDateInputValue(date) {
   const year = date.getFullYear()
@@ -101,7 +102,9 @@ function AttendancePanelPage() {
 
         if (!isActive) return
 
-        const nextWorkers = Array.isArray(workersResult.workers) ? workersResult.workers.filter((worker) => workerRoles.has(worker.role)) : []
+        const nextWorkers = Array.isArray(workersResult.workers)
+          ? workersResult.workers.filter((worker) => attendanceWorkerRoles.includes(worker.role))
+          : []
         const nextMap = Object.fromEntries((attendanceResult.records ?? []).map((record) => [String(record.accountId), record]))
 
         setWorkers(nextWorkers)

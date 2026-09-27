@@ -17,11 +17,18 @@ export const allowedOrigins = new Set(
 )
 
 function normalizeHost(hostname) {
-  return String(hostname ?? '')
+  const host = String(hostname ?? '')
     .trim()
     .toLowerCase()
-    .replace(/^\[|\]$/g, '')
     .replace(/\.$/, '')
+
+  if (host.startsWith('[') && host.includes(']')) {
+    const end = host.indexOf(']')
+    const noBrackets = host.slice(1, end)
+    return noBrackets
+  }
+
+  return host.replace(/:\d+$/, '')
 }
 
 export function isAllowedHost(hostname) {

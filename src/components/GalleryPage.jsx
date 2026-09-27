@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowLeft, ArrowRight, Minus, Plus, ShoppingBag, Trash2, TriangleAlert, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Minus, Plus, ShoppingBag, Trash2, X } from 'lucide-react'
 import { galleryCategories } from '../data/gallery.js'
 import { apiRequest } from '../utils/api.js'
 import './GalleryPage.css'
@@ -31,14 +31,10 @@ function GalleryPage() {
   const [account, setAccount] = useState(null)
   const [isCheckingSession, setIsCheckingSession] = useState(true)
   const [quoteError, setQuoteError] = useState('')
-  const [isQuoteNoticeOpen, setIsQuoteNoticeOpen] = useState(false)
-  const [isQuoteNoticeClosing, setIsQuoteNoticeClosing] = useState(false)
   const quantityDialogRef = useRef(null)
   const orderDialogRef = useRef(null)
-  const quoteNoticeDialogRef = useRef(null)
   const orderCloseTimeoutRef = useRef(null)
   const quantityCloseTimeoutRef = useRef(null)
-  const quoteNoticeCloseTimeoutRef = useRef(null)
 
   const activeCategory = galleryCategories.find((category) => category.id === activeCategoryId)
   const orderCount = order.reduce((total, item) => total + item.quantity, 0)
@@ -117,17 +113,9 @@ function GalleryPage() {
     if (!isOrderOpen && dialog.open) dialog.close()
   }, [isOrderOpen])
 
-  useEffect(() => {
-    const dialog = quoteNoticeDialogRef.current
-    if (!dialog) return
-    if (isQuoteNoticeOpen && !dialog.open) dialog.showModal()
-    if (!isQuoteNoticeOpen && dialog.open) dialog.close()
-  }, [isQuoteNoticeOpen])
-
   useEffect(() => () => {
     window.clearTimeout(orderCloseTimeoutRef.current)
     window.clearTimeout(quantityCloseTimeoutRef.current)
-    window.clearTimeout(quoteNoticeCloseTimeoutRef.current)
   }, [])
 
   useEffect(() => {
@@ -172,10 +160,14 @@ function GalleryPage() {
         window.location.assign('/cuenta?modo=registro')
         return
       }
-      setIsQuoteNoticeClosing(false)
-      setIsQuoteNoticeOpen(true)
-    } catch {
-      setQuoteError('No pudimos comprobar tu sesión. Intenta de nuevo en un momento.')
+      const { chatId } = await apiRequest('/api/chats', {
+        method: 'POST',
+        body: JSON.stringify({ items: order.map(({ id, quantity: itemQuantity }) => ({ id, quantity: itemQuantity })) }),
+      })
+      window.sessionStorage.removeItem(orderStorageKey)
+      window.location.assign(`/cuenta/chats?chat=${encodeURIComponent(chatId)}`)
+    } catch (requestError) {
+      setQuoteError(requestError.message || 'No pudimos iniciar el chat de cotización. Intenta de nuevo.')
     } finally {
       setIsCheckingSession(false)
     }
@@ -204,12 +196,6 @@ function GalleryPage() {
         ? { ...item, quantity: Math.max(0, Math.min(99, item.quantity + difference)) }
         : item)
       .filter((item) => item.quantity > 0))
-  }
-
-  function closeQuoteNotice() {
-    if (!isQuoteNoticeOpen || isQuoteNoticeClosing) return
-    setIsQuoteNoticeClosing(true)
-    quoteNoticeCloseTimeoutRef.current = window.setTimeout(() => setIsQuoteNoticeOpen(false), 180)
   }
 
   return (
@@ -392,25 +378,6 @@ function GalleryPage() {
         )}
       </dialog>
 
-      <dialog
-        className={`gallery-notice-dialog${isQuoteNoticeClosing ? ' is-closing' : ''}`}
-        ref={quoteNoticeDialogRef}
-        aria-labelledby="quote-notice-title"
-        onClose={() => { setIsQuoteNoticeOpen(false); setIsQuoteNoticeClosing(false) }}
-        onCancel={(event) => { event.preventDefault(); closeQuoteNotice() }}
-        onClick={(event) => { if (event.target === event.currentTarget) closeQuoteNotice() }}
-      >
-        <div className="gallery-notice-content">
-          <button className="gallery-icon-button gallery-notice-close" type="button" aria-label="Cerrar aviso" onClick={closeQuoteNotice}>
-            <X size={19} />
-          </button>
-          <span className="gallery-notice-icon"><TriangleAlert size={23} /></span>
-          <p className="gallery-eyebrow"><span>Aviso temporal</span></p>
-          <h2 id="quote-notice-title">La cotización sigue en desarrollo</h2>
-          <p>Tu lista se conserva en esta pestaña. Pronto podrás enviar la solicitud directamente desde aquí.</p>
-          <button className="gallery-notice-confirm" type="button" onClick={closeQuoteNotice}>Cerrar</button>
-        </div>
-      </dialog>
     </div>
   )
 }

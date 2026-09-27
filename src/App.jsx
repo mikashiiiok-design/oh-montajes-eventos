@@ -12,6 +12,7 @@ import ErrorPage from './components/ErrorPage.jsx'
 import AccountPage from './components/AccountPage.jsx'
 import AccountAdminPage from './components/AccountAdminPage.jsx'
 import AttendancePanelPage from './components/AttendancePanelPage.jsx'
+import ChatsPage from './components/ChatsPage.jsx'
 import GalleryPage from './components/GalleryPage.jsx'
 import LegalPage from './components/LegalPage.jsx'
 import { useScrollReveal } from './hooks/useScrollReveal.js'
@@ -75,6 +76,7 @@ function App() {
   if (pathname === '/500') return <><PageLoader /><ErrorPage statusCode={500} /></>
   if (pathname === '/cuenta/administracion') return <><PageLoader /><AccountAdminPage /></>
   if (pathname === '/cuenta/asistencia') return <><PageLoader /><AttendancePanelPage /></>
+  if (pathname === '/cuenta/chats') return <><PageLoader /><ChatsPage /></>
   if (pathname === '/cuenta') return <><PageLoader /><AccountPage /></>
   if (pathname === '/terminos-y-condiciones') return <><PageLoader /><LegalPage variant="terms" /></>
   if (pathname === '/terminos-de-servicio') return <><PageLoader /><LegalPage variant="service" /></>

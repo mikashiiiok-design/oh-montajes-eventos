@@ -3,6 +3,7 @@ import { ArrowUpRight, ClipboardList, LogIn, LogOut, Menu, MessageCircle, Moon, 
 import companyLogo from '../assets/LOGO-OH.webp'
 import { apiRequest } from '../utils/api.js'
 import { scrollToTop } from '../utils/scrollToTop.js'
+import { chatAccessRoles } from '../../shared/roles.js'
 
 const navItems = [
   { href: '#trabajos', label: 'Proyectos' },
@@ -18,6 +19,7 @@ function SiteHeader({ theme, onToggleTheme }) {
   const [accountMenuOpen, setAccountMenuOpen] = useState(false)
   const [accountMenuError, setAccountMenuError] = useState('')
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const canAccessChats = account?.role === 'client' || chatAccessRoles.includes(account?.role)
   const accountMenuRef = useRef(null)
   const accountButtonRef = useRef(null)
 
@@ -124,9 +126,11 @@ function SiteHeader({ theme, onToggleTheme }) {
                     <button className="account-dropdown-unavailable" type="button" disabled>
                       <ClipboardList size={16} /> Registro de pedidos <small>Próximamente</small>
                     </button>
-                    <button className="account-dropdown-unavailable" type="button" disabled>
-                      <MessageCircle size={16} /> Chats <small>Próximamente</small>
-                    </button>
+                    {canAccessChats && (
+                      <a href="/cuenta/chats" onClick={() => setAccountMenuOpen(false)}>
+                        <MessageCircle size={16} /> Chats
+                      </a>
+                    )}
                     <div className="account-dropdown-divider" />
                     <button className="account-dropdown-logout" type="button" onClick={handleLogout} disabled={isLoggingOut}>
                       <LogOut size={16} /> {isLoggingOut ? 'Cerrando sesión…' : 'Cerrar sesión'}

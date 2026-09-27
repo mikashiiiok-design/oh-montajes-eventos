@@ -4,7 +4,7 @@ import companyLogo from '../assets/LOGO-OH.webp'
 import AccountRoleBadge from './AccountRoleBadge.jsx'
 import { apiRequest } from '../utils/api.js'
 import { notifyAccountSync, subscribeToAccountSync } from '../utils/accountSync.js'
-import { attendanceAccessRoles } from '../../shared/roles.js'
+import { attendanceAccessRoles, chatAccessRoles } from '../../shared/roles.js'
 import './AccountPage.css'
 
 function AccountPage() {
@@ -27,7 +27,7 @@ function AccountPage() {
     { id: 'attendance', label: 'Lista de asistencia', enabled: attendanceAccessRoles.includes(account?.role) },
     { id: 'furniture', label: 'Mobiliario', enabled: account?.role === 'owner' },
     { id: 'orders', label: 'Registro de pedidos', enabled: account?.role === 'owner' },
-    { id: 'chats', label: 'Chats', enabled: account?.role === 'owner' },
+    { id: 'chats', label: 'Chats', enabled: account?.role === 'client' || chatAccessRoles.includes(account?.role) },
     { id: 'balance', label: 'Balance', enabled: account?.role === 'owner' },
   ]
 
@@ -198,6 +198,10 @@ function AccountPage() {
                             }
                             if (panel.id === 'attendance') {
                               window.location.assign('/cuenta/asistencia')
+                              return
+                            }
+                            if (panel.id === 'chats') {
+                              window.location.assign('/cuenta/chats')
                               return
                             }
                             openDevelopmentModal(panel.label)

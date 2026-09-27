@@ -78,24 +78,6 @@ export async function initializeDatabase() {
     ON customer_admin_audit (created_at DESC)
   `)
 
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS attendance_records (
-      id BIGSERIAL PRIMARY KEY,
-      account_id BIGINT NOT NULL REFERENCES customer_accounts(id) ON DELETE CASCADE,
-      attendance_date DATE NOT NULL,
-      status VARCHAR(32) NOT NULL CHECK (status IN ('present', 'late', 'late_justified', 'absent')),
-      notes VARCHAR(250),
-      created_by BIGINT REFERENCES customer_accounts(id) ON DELETE SET NULL,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      record_hash CHAR(64) NOT NULL,
-      UNIQUE (account_id, attendance_date)
-    )
-  `)
-
-  await pool.query(`
-    CREATE INDEX IF NOT EXISTS attendance_records_date_idx
-    ON attendance_records (attendance_date DESC)
-  `)
 }
 
 pool.on('error', (error) => {

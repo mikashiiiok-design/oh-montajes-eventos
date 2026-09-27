@@ -21,10 +21,8 @@ function AccountPage() {
   const [developmentPanel, setDevelopmentPanel] = useState('')
   const developmentDialogRef = useRef(null)
 
-  const attendanceRoles = new Set(['owner', 'accountant', 'warehouse_manager', 'secretary'])
   const panelItems = [
     { id: 'admin', label: 'Administración', enabled: account?.role === 'owner' },
-    { id: 'attendance', label: 'Lista de asistencia', enabled: attendanceRoles.has(account?.role) },
     { id: 'furniture', label: 'Mobiliario', enabled: account?.role === 'owner' },
     { id: 'orders', label: 'Registro de pedidos', enabled: account?.role === 'owner' },
     { id: 'chats', label: 'Chats', enabled: account?.role === 'owner' },
@@ -194,10 +192,6 @@ function AccountPage() {
                           if (panel.enabled) {
                             if (panel.id === 'admin') {
                               window.location.assign('/cuenta/administracion')
-                              return
-                            }
-                            if (panel.id === 'attendance') {
-                              window.location.assign('/cuenta/asistencia')
                               return
                             }
                             openDevelopmentModal(panel.label)

@@ -11,7 +11,8 @@ const attendanceOptions = [
   { value: 'absent', label: 'Inasistencia' },
 ]
 
-const allowedRoles = new Set(['owner', 'accountant', 'warehouse_manager', 'secretary'])
+const accessRoles = new Set(['owner', 'accountant', 'warehouse_manager', 'secretary'])
+const workerRoles = new Set(['accountant', 'warehouse_manager', 'secretary', 'employee'])
 
 function toDateInputValue(date) {
   const year = date.getFullYear()
@@ -44,9 +45,11 @@ function AttendancePanelPage() {
     const previousTitle = document.title
     const previousRobots = document.querySelector('meta[name="robots"]')
     const previousRobotsContent = previousRobots?.content
+
     document.title = 'Lista de asistencia | OH Montajes y Eventos'
-    if (previousRobots) previousRobots.content = 'noindex, nofollow'
-    else {
+    if (previousRobots) {
+      previousRobots.content = 'noindex, nofollow'
+    } else {
       const robots = document.createElement('meta')
       robots.name = 'robots'
       robots.content = 'noindex, nofollow'
@@ -55,8 +58,11 @@ function AttendancePanelPage() {
 
     return () => {
       document.title = previousTitle
-      if (previousRobots) previousRobots.content = previousRobotsContent
-      else document.querySelector('meta[name="robots"]')?.remove()
+      if (previousRobots) {
+        previousRobots.content = previousRobotsContent
+      } else {
+        document.querySelector('meta[name="robots"]')?.remove()
+      }
     }
   }, [])
 
@@ -80,9 +86,8 @@ function AttendancePanelPage() {
   }, [])
 
   useEffect(() => {
-    if (!isCheckingSession && (!sessionAccount || !allowedRoles.has(sessionAccount.role))) {
-      window.location.replace('/404')
-      return
+    if (isCheckingSession || !sessionAccount || !accessRoles.has(sessionAccount.role)) {
+      return undefined
     }
 
     let isActive = true
@@ -96,34 +101,35 @@ function AttendancePanelPage() {
 
         if (!isActive) return
 
-        const nextWorkers = workersResult.workers ?? []
+        const nextWorkers = Array.isArray(workersResult.workers) ? workersResult.workers.filter((worker) => workerRoles.has(worker.role)) : []
         const nextMap = Object.fromEntries((attendanceResult.records ?? []).map((record) => [String(record.accountId), record]))
-        setWorkers(nextWorkers)
 
-        const nextDraft = Object.fromEntries(
+        setWorkers(nextWorkers)
+        setDraft(Object.fromEntries(
           nextWorkers.map((worker) => {
             const existing = nextMap[String(worker.id)]
             return [String(worker.id), existing?.status ?? 'present']
           }),
-        )
-        setDraft(nextDraft)
+        ))
         setError('')
       } catch (requestError) {
-        if (isActive) setError(requestError.message)
+        if (isActive) {
+          setError(requestError.message || 'No se pudo cargar la asistencia.')
+        }
       }
     }
 
     loadAttendance()
     return () => { isActive = false }
-  }, [sessionAccount, isCheckingSession, selectedDate])
+  }, [isCheckingSession, selectedDate, sessionAccount])
 
   const visibleWorkers = useMemo(
-    () => workers.filter((worker) => allowedRoles.has(worker.role)),
+    () => workers.filter((worker) => workerRoles.has(worker.role)),
     [workers],
   )
 
   async function handleSave() {
-    if (!sessionAccount || !allowedRoles.has(sessionAccount.role)) {
+    if (!sessionAccount || !accessRoles.has(sessionAccount.role)) {
       window.location.replace('/404')
       return
     }
@@ -143,22 +149,35 @@ function AttendancePanelPage() {
         body: JSON.stringify({ date: selectedDate, entries }),
       })
 
-      setNotice('El registro de asistencia quedó guardado y no puede ser alterado en esta sesión.')
+      setNotice('El registro de asistencia quedó guardado correctamente.')
     } catch (requestError) {
-      setError(requestError.message)
+      setError(requestError.message || 'No se pudo guardar la asistencia.')
     } finally {
       setIsSaving(false)
     }
   }
 
-  const isAccessBlocked = !isCheckingSession && (!sessionAccount || !allowedRoles.has(sessionAccount.role))
+  const isAccessBlocked = !isCheckingSession && (!sessionAccount || !accessRoles.has(sessionAccount.role))
 
   if (isCheckingSession) {
-    return <main className="attendance-panel"><div className="attendance-state" role="status">Comprobando acceso…</div></main>
+    return (
+      <main className="attendance-panel">
+        <div className="attendance-state" role="status">Comprobando acceso…</div>
+      </main>
+    )
   }
 
   if (isAccessBlocked) {
-    return <main className="attendance-panel"><div className="attendance-state" role="alert"><ShieldCheck size={28} /><h1>Acceso restringido</h1><p>Esta sección está disponible solo para personal autorizado.</p><a href="/cuenta">Volver a mi cuenta</a></div></main>
+    return (
+      <main className="attendance-panel">
+        <div className="attendance-state" role="alert">
+          <ShieldCheck size={28} />
+          <h1>Acceso restringido</h1>
+          <p>Esta sección solo está disponible para el Dueño, el Jefe de Bodega, el Contador y la Secretaria.</p>
+          <a href="/cuenta">Volver a mi cuenta</a>
+        </div>
+      </main>
+    )
   }
 
   return (
@@ -174,18 +193,18 @@ function AttendancePanelPage() {
             <p className="attendance-kicker"><span>CONTROL / 02</span> Registro diario</p>
             <h1>Lista de asistencia</h1>
           </div>
-          <div className="attendance-date-picker">
+          <label className="attendance-date-picker" aria-label="Seleccionar fecha de asistencia">
             <CalendarDays size={16} />
-            <input type="date" value={selectedDate} onChange={(event) => setSelectedDate(event.target.value)} aria-label="Seleccionar fecha de asistencia" />
-          </div>
+            <input type="date" value={selectedDate} onChange={(event) => setSelectedDate(event.target.value)} />
+          </label>
         </section>
 
         <section className="attendance-summary">
-          <div>
+          <div className="attendance-card">
             <span>Fecha actual</span>
             <strong>{formatDayLabel(selectedDate)}</strong>
           </div>
-          <div>
+          <div className="attendance-card">
             <span>Personal activo</span>
             <strong>{visibleWorkers.length} colaboradores</strong>
           </div>
@@ -215,7 +234,10 @@ function AttendancePanelPage() {
                   <label className="attendance-select-wrap">
                     <select
                       value={draft[String(worker.id)] ?? 'present'}
-                      onChange={(event) => setDraft((current) => ({ ...current, [String(worker.id)]: event.target.value }))}
+                      onChange={(event) => {
+                        const nextValue = event.target.value
+                        setDraft((current) => ({ ...current, [String(worker.id)]: nextValue }))
+                      }}
                       aria-label={`Estado de asistencia para ${worker.name}`}
                     >
                       {attendanceOptions.map((option) => (
@@ -229,7 +251,7 @@ function AttendancePanelPage() {
           )}
 
           <div className="attendance-actions">
-            <button type="button" className="attendance-save" onClick={handleSave} disabled={isSaving}>
+            <button type="button" onClick={handleSave} className="attendance-save" disabled={isSaving}>
               {isSaving ? 'Guardando…' : 'Guardar registro'}
               {!isSaving && <Save size={15} />}
             </button>

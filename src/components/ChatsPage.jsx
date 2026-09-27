@@ -407,8 +407,8 @@ function ChatsPage() {
 
               <div className="chat-message-list" ref={messageListRef} onScroll={handleMessageListScroll} aria-live="polite">
                 <div className="chat-start-note">
-                  <span>Cotización creada</span>
-                  <p>Tu cotización ya está en manos del equipo de OH Montajes y Eventos. Te responderemos por este chat; gracias por tu paciencia y mantente atento.</p>
+                  <span>Solicitud recibida</span>
+                  <p>El equipo de OH Montajes y Eventos revisará disponibilidad, personalizaciones y costos, y te enviará la cotización final por este chat. Mantente atento.</p>
                   <time>{formatDate.format(new Date(activeChat.createdAt))}</time>
                 </div>
                 {activeChat.messages.map((message) => {

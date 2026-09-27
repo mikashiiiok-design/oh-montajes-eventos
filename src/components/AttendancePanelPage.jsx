@@ -239,10 +239,13 @@ function AttendancePanelPage() {
             <p className="attendance-panel-eyebrow"><span>CONTROL / 02</span> Registro diario</p>
             <h1>Lista de asistencia</h1>
           </div>
-          <label className="attendance-date-picker" aria-label="Seleccionar fecha de asistencia">
-            <CalendarDays size={16} />
+        </section>
+
+        <section className="attendance-panel-toolbar" aria-label="Selector de fecha del registro">
+          <div className="attendance-date-picker attendance-date-picker--compact">
+            <CalendarDays size={15} />
             <input type="date" value={selectedDate} onChange={(event) => setSelectedDate(event.target.value)} />
-          </label>
+          </div>
         </section>
 
         <section className="attendance-panel-summary">
@@ -276,7 +279,7 @@ function AttendancePanelPage() {
                     <span className="attendance-worker-name">{worker.name}</span>
                     <small className="attendance-worker-email">{worker.email}</small>
                   </div>
-                  <span className="attendance-role-pill">{getRoleInfo(worker.role).label}</span>
+                  <span className="attendance-role-pill" data-role={worker.role}>{getRoleInfo(worker.role).label}</span>
                   <label className="attendance-status-wrap">
                     <select
                       value={draft[String(worker.id)] ?? ''}
@@ -332,18 +335,25 @@ function AttendancePanelPage() {
             <p className="attendance-panel-empty">No hay registros para esta fecha.</p>
           ) : (
             <div className="attendance-panel-list">
-              {queryRecords.map((record) => (
-                <div key={`${record.accountId}-${record.date ?? queryDate}`} className="attendance-panel-row">
-                  <div className="attendance-worker-meta">
-                    <span className="attendance-worker-name">{record.name}</span>
-                    <small className="attendance-worker-email">{record.role}</small>
+              {queryRecords.map((record) => {
+                const roleInfo = getRoleInfo(record.role)
+                const recordStatus = attendanceOptions.find((option) => option.value === record.status)?.label ?? record.status
+
+                return (
+                  <div key={`${record.accountId}-${record.date ?? queryDate}`} className="attendance-panel-row">
+                    <div className="attendance-worker-meta">
+                      <span className="attendance-worker-name">{record.name}</span>
+                      <small className="attendance-worker-email">{record.email ?? roleInfo.label}</small>
+                    </div>
+                    <span className="attendance-role-pill" data-role={record.role}>{roleInfo.label}</span>
+                    <span className="attendance-status-wrap attendance-status-wrap--read">
+                      <span className={`attendance-status-badge attendance-status-badge--${record.status ?? 'unknown'}`}>
+                        {recordStatus}
+                      </span>
+                    </span>
                   </div>
-                  <span className="attendance-role-pill">{record.role}</span>
-                  <span className="attendance-status-wrap">
-                    <small>{attendanceOptions.find((option) => option.value === record.status)?.label ?? record.status}</small>
-                  </span>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </section>

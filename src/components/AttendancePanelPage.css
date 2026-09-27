@@ -47,9 +47,9 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 24px;
-  margin-bottom: 28px;
+  margin-bottom: 18px;
   border-bottom: 1px solid var(--line);
-  padding-bottom: 26px;
+  padding-bottom: 24px;
 }
 
 .attendance-panel-eyebrow {
@@ -72,15 +72,26 @@
   line-height: .96;
 }
 
+.attendance-panel-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 20px;
+}
+
 .attendance-date-picker {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  min-height: 52px;
+  min-height: 46px;
   padding: 0 14px;
   border: 1px solid var(--line);
-  background: rgba(18, 18, 18, 0.55);
+  background: rgba(255, 255, 255, 0.02);
   color: var(--text);
+}
+
+.attendance-date-picker--compact {
+  min-height: 42px;
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .attendance-date-picker input {
@@ -111,7 +122,7 @@
   min-height: 110px;
   padding: 18px 20px;
   border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.01);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
 }
 
 .attendance-summary-label {
@@ -150,7 +161,7 @@
 
 .attendance-panel-card {
   border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.01);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.015), rgba(0, 0, 0, 0.04));
 }
 
 .attendance-panel-table-header,
@@ -194,17 +205,35 @@
 }
 
 .attendance-role-pill {
+  --role-color: var(--accent);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 28px;
+  min-height: 32px;
+  width: fit-content;
   padding: 0 10px;
   border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.02);
   color: var(--text);
   font-size: 9px;
   font-weight: 800;
   letter-spacing: .08em;
   text-transform: uppercase;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
+}
+
+.attendance-role-pill[data-role='owner'] { --role-color: #c34f28; }
+.attendance-role-pill[data-role='lawyer'] { --role-color: #326a64; }
+.attendance-role-pill[data-role='accountant'] { --role-color: #3567a8; }
+.attendance-role-pill[data-role='warehouse_manager'] { --role-color: #71813a; }
+.attendance-role-pill[data-role='secretary'] { --role-color: #a26a20; }
+.attendance-role-pill[data-role='employee'] { --role-color: #73578c; }
+.attendance-role-pill[data-role='client'] { --role-color: #59636c; }
+
+.attendance-role-pill {
+  border-color: color-mix(in srgb, var(--role-color) 45%, var(--line));
+  color: color-mix(in srgb, var(--text) 88%, var(--role-color));
+  background: color-mix(in srgb, var(--role-color) 12%, rgba(255, 255, 255, 0.02));
 }
 
 .attendance-status-wrap {
@@ -216,11 +245,17 @@
   width: 100%;
   min-height: 42px;
   padding: 0 12px;
-  border: 1px solid var(--line);
-  background: var(--bg);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(6, 10, 12, 0.8);
   color: var(--text);
   font: inherit;
   font-size: 12px;
+  outline: none;
+}
+
+.attendance-status-wrap select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
 .attendance-status-wrap select:disabled {
@@ -228,9 +263,50 @@
   cursor: not-allowed;
 }
 
-.attendance-status-wrap small {
+.attendance-status-wrap--read {
+  justify-items: start;
+}
+
+.attendance-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.attendance-status-badge--present {
+  background: rgba(58, 178, 128, 0.12);
+  border-color: rgba(58, 178, 128, 0.4);
+  color: #c9f6dd;
+}
+
+.attendance-status-badge--late {
+  background: rgba(222, 148, 61, 0.12);
+  border-color: rgba(222, 148, 61, 0.45);
+  color: #f8d8b1;
+}
+
+.attendance-status-badge--late_justified {
+  background: rgba(79, 124, 255, 0.12);
+  border-color: rgba(79, 124, 255, 0.45);
+  color: #d9e4ff;
+}
+
+.attendance-status-badge--absent {
+  background: rgba(202, 76, 76, 0.12);
+  border-color: rgba(202, 76, 76, 0.45);
+  color: #f7c3c3;
+}
+
+.attendance-status-badge--unknown {
+  background: rgba(255, 255, 255, 0.04);
   color: var(--muted);
-  font-size: 9px;
 }
 
 .attendance-panel-empty {

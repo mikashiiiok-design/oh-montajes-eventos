@@ -297,6 +297,14 @@ router.post('/quotes/:quoteId/accept', async (request, response) => {
   const client = await pool.connect()
   try {
     await client.query('BEGIN')
+    const lockedChat = await client.query(
+      'SELECT status FROM chat_conversations WHERE id = $1 AND customer_id = $2 FOR UPDATE',
+      [chat.id, account.id],
+    )
+    if (lockedChat.rows[0]?.status !== 'open') {
+      await client.query('ROLLBACK')
+      return response.status(409).json({ error: 'La conversación está cerrada.' })
+    }
     const quote = await client.query(
       `SELECT id, version, status, valid_until
        FROM chat_quote_versions WHERE id = $1 AND chat_id = $2 FOR UPDATE`,

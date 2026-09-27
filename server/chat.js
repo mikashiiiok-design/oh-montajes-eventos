@@ -90,8 +90,7 @@ router.get('/', verifyOrigin, async (request, response) => {
              WHERE message.chat_id = conversation.id) AS message_count
      FROM chat_conversations AS conversation
      JOIN customer_accounts AS customer ON customer.id = conversation.customer_id
-     WHERE ($2::boolean AND conversation.status = 'open')
-        OR (NOT $2::boolean AND conversation.customer_id = $1)
+      WHERE $2::boolean OR conversation.customer_id = $1
      ORDER BY conversation.last_message_at DESC, conversation.id DESC`,
     [account.id, isStaff],
   )

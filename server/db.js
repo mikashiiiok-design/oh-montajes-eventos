@@ -170,6 +170,100 @@ export async function initializeDatabase() {
       PRIMARY KEY (chat_id, reader_side)
     )
   `)
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS chat_quote_versions (
+      id BIGSERIAL PRIMARY KEY,
+      chat_id BIGINT NOT NULL REFERENCES chat_conversations(id) ON DELETE CASCADE,
+      version INTEGER NOT NULL CHECK (version > 0),
+      status VARCHAR(16) NOT NULL CHECK (status IN ('sent', 'accepted', 'superseded')),
+      total_amount BIGINT NOT NULL CHECK (total_amount >= 0),
+      currency CHAR(3) NOT NULL DEFAULT 'COP',
+      terms VARCHAR(2000) NOT NULL DEFAULT '',
+      valid_until DATE,
+      created_by BIGINT NOT NULL REFERENCES customer_accounts(id) ON DELETE RESTRICT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      accepted_by BIGINT REFERENCES customer_accounts(id) ON DELETE SET NULL,
+      accepted_at TIMESTAMPTZ,
+      UNIQUE (chat_id, version)
+    )
+  `)
+
+  await pool.query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS chat_quote_one_accepted_idx
+    ON chat_quote_versions (chat_id) WHERE status = 'accepted'
+  `)
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS chat_quote_version_items (
+      id BIGSERIAL PRIMARY KEY,
+      quote_version_id BIGINT NOT NULL REFERENCES chat_quote_versions(id) ON DELETE CASCADE,
+      product_id VARCHAR(80),
+      product_name VARCHAR(160) NOT NULL,
+      category_name VARCHAR(100) NOT NULL DEFAULT '',
+      description VARCHAR(300) NOT NULL DEFAULT '',
+      unit_price BIGINT NOT NULL CHECK (unit_price >= 0),
+      quantity SMALLINT NOT NULL CHECK (quantity BETWEEN 1 AND 99),
+      customizations JSONB NOT NULL DEFAULT '{}'::jsonb CHECK (jsonb_typeof(customizations) = 'object')
+    )
+  `)
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS orders (
+      id BIGSERIAL PRIMARY KEY,
+      chat_id BIGINT NOT NULL REFERENCES chat_conversations(id) ON DELETE RESTRICT,
+      quote_version_id BIGINT NOT NULL UNIQUE REFERENCES chat_quote_versions(id) ON DELETE RESTRICT,
+      status VARCHAR(20) NOT NULL DEFAULT 'planning' CHECK (status IN ('planning', 'scheduled', 'in_progress', 'completed', 'cancelled')),
+      event_name VARCHAR(160) NOT NULL,
+      venue VARCHAR(240) NOT NULL,
+      setup_at TIMESTAMPTZ NOT NULL,
+      event_at TIMESTAMPTZ NOT NULL,
+      dismantle_at TIMESTAMPTZ NOT NULL,
+      coordinator_id BIGINT NOT NULL REFERENCES customer_accounts(id) ON DELETE RESTRICT,
+      created_by BIGINT NOT NULL REFERENCES customer_accounts(id) ON DELETE RESTRICT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      CHECK (setup_at <= event_at AND event_at <= dismantle_at)
+    )
+  `)
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS orders_status_schedule_idx
+    ON orders (status, setup_at)
+  `)
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS order_items (
+      id BIGSERIAL PRIMARY KEY,
+      order_id BIGINT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+      source_quote_item_id BIGINT REFERENCES chat_quote_version_items(id) ON DELETE SET NULL,
+      product_id VARCHAR(80),
+      product_name VARCHAR(160) NOT NULL,
+      category_name VARCHAR(100) NOT NULL DEFAULT '',
+      description VARCHAR(300) NOT NULL DEFAULT '',
+      unit_price BIGINT NOT NULL CHECK (unit_price >= 0),
+      quantity SMALLINT NOT NULL CHECK (quantity BETWEEN 1 AND 99),
+      customizations JSONB NOT NULL DEFAULT '{}'::jsonb CHECK (jsonb_typeof(customizations) = 'object')
+    )
+  `)
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS order_tasks (
+      id BIGSERIAL PRIMARY KEY,
+      order_id BIGINT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+      task_key VARCHAR(32) NOT NULL CHECK (task_key IN ('preparation', 'delivery', 'installation', 'dismantling', 'return_check')),
+      label VARCHAR(120) NOT NULL,
+      assigned_to BIGINT NOT NULL REFERENCES customer_accounts(id) ON DELETE RESTRICT,
+      status VARCHAR(16) NOT NULL DEFAULT 'assigned' CHECK (status IN ('assigned', 'in_progress', 'completed', 'blocked')),
+      updated_by BIGINT REFERENCES customer_accounts(id) ON DELETE SET NULL,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE (order_id, task_key)
+    )
+  `)
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS order_tasks_assignee_idx
+    ON order_tasks (assigned_to, status)
+  `)
 }
 
 pool.on('error', (error) => {

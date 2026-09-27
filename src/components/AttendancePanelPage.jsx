@@ -35,12 +35,16 @@ function AttendancePanelPage() {
   const [sessionAccount, setSessionAccount] = useState(null)
   const [isCheckingSession, setIsCheckingSession] = useState(true)
   const [selectedDate, setSelectedDate] = useState(toDateInputValue(new Date()))
+  const [queryDate, setQueryDate] = useState(toDateInputValue(new Date()))
   const [workers, setWorkers] = useState([])
   const [draft, setDraft] = useState({})
+  const [savedDates, setSavedDates] = useState(new Set())
+  const [queryRecords, setQueryRecords] = useState([])
   const [isSaving, setIsSaving] = useState(false)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [notice, setNotice] = useState('')
   const [error, setError] = useState('')
+  const [queryError, setQueryError] = useState('')
 
   useEffect(() => {
     const previousTitle = document.title
@@ -106,14 +110,21 @@ function AttendancePanelPage() {
           ? workersResult.workers.filter((worker) => attendanceWorkerRoles.includes(worker.role))
           : []
         const nextMap = Object.fromEntries((attendanceResult.records ?? []).map((record) => [String(record.accountId), record]))
+        const dateHasSavedRecords = (attendanceResult.records ?? []).length > 0
 
         setWorkers(nextWorkers)
         setDraft(Object.fromEntries(
           nextWorkers.map((worker) => {
             const existing = nextMap[String(worker.id)]
-            return [String(worker.id), existing?.status ?? 'present']
+            return [String(worker.id), existing ? existing.status : '']
           }),
         ))
+        setSavedDates((current) => {
+          const next = new Set(current)
+          if (dateHasSavedRecords) next.add(selectedDate)
+          else next.delete(selectedDate)
+          return next
+        })
         setHasUnsavedChanges(false)
         setError('')
       } catch (requestError) {
@@ -127,6 +138,27 @@ function AttendancePanelPage() {
     return () => { isActive = false }
   }, [isCheckingSession, selectedDate, sessionAccount])
 
+  useEffect(() => {
+    let isActive = true
+
+    async function loadQueryRecords() {
+      try {
+        const result = await apiRequest(`/api/auth/attendance?date=${queryDate}`)
+        if (!isActive) return
+        setQueryRecords(Array.isArray(result.records) ? result.records : [])
+        setQueryError('')
+      } catch (requestError) {
+        if (isActive) {
+          setQueryRecords([])
+          setQueryError(requestError.message || 'No se pudo consultar la asistencia.')
+        }
+      }
+    }
+
+    loadQueryRecords()
+    return () => { isActive = false }
+  }, [queryDate])
+
   const visibleWorkers = useMemo(
     () => workers.filter((worker) => workerRoles.has(worker.role)),
     [workers],
@@ -138,6 +170,12 @@ function AttendancePanelPage() {
       return
     }
 
+    const missingSelection = visibleWorkers.some((worker) => !draft[String(worker.id)])
+    if (missingSelection) {
+      setError('Debes seleccionar una opción para cada trabajador antes de guardar.')
+      return
+    }
+
     setIsSaving(true)
     setNotice('')
     setError('')
@@ -145,7 +183,7 @@ function AttendancePanelPage() {
     try {
       const entries = visibleWorkers.map((worker) => ({
         accountId: worker.id,
-        status: draft[String(worker.id)] ?? 'present',
+        status: draft[String(worker.id)],
       }))
 
       await apiRequest('/api/auth/attendance', {
@@ -153,6 +191,7 @@ function AttendancePanelPage() {
         body: JSON.stringify({ date: selectedDate, entries }),
       })
 
+      setSavedDates((current) => new Set(current).add(selectedDate))
       setHasUnsavedChanges(false)
       setNotice('El registro de asistencia quedó guardado correctamente.')
     } catch (requestError) {
@@ -163,6 +202,8 @@ function AttendancePanelPage() {
   }
 
   const isAccessBlocked = !isCheckingSession && (!sessionAccount || !accessRoles.has(sessionAccount.role))
+  const isDateLocked = savedDates.has(selectedDate)
+  const hasIncompleteSelection = visibleWorkers.some((worker) => !draft[String(worker.id)])
 
   if (isCheckingSession) {
     return (
@@ -238,7 +279,8 @@ function AttendancePanelPage() {
                   <span className="attendance-role-pill">{getRoleInfo(worker.role).label}</span>
                   <label className="attendance-status-wrap">
                     <select
-                      value={draft[String(worker.id)] ?? 'present'}
+                      value={draft[String(worker.id)] ?? ''}
+                      disabled={isDateLocked || isSaving}
                       onChange={(event) => {
                         const nextValue = event.target.value
                         setDraft((current) => ({ ...current, [String(worker.id)]: nextValue }))
@@ -246,6 +288,7 @@ function AttendancePanelPage() {
                       }}
                       aria-label={`Estado de asistencia para ${worker.name}`}
                     >
+                      <option value="">Selecciona una opción</option>
                       {attendanceOptions.map((option) => (
                         <option key={option.value} value={option.value}>{option.label}</option>
                       ))}
@@ -257,11 +300,52 @@ function AttendancePanelPage() {
           )}
 
           <div className="attendance-panel-actions">
-            <button type="button" onClick={handleSave} className="attendance-panel-save" disabled={isSaving || !hasUnsavedChanges || visibleWorkers.length === 0}>
+            <button
+              type="button"
+              onClick={handleSave}
+              className="attendance-panel-save"
+              disabled={isSaving || isDateLocked || !hasUnsavedChanges || hasIncompleteSelection || visibleWorkers.length === 0}
+            >
               {isSaving ? 'Guardando…' : 'Guardar registro'}
               {!isSaving && <Save size={15} />}
             </button>
           </div>
+        </section>
+
+        <section className="attendance-panel-card" aria-label="Consulta de registros de asistencia">
+          <div className="attendance-panel-table-header">
+            <span>Consulta de registros</span>
+            <span>Fecha</span>
+            <span>Estado</span>
+          </div>
+
+          <div className="attendance-panel-actions" style={{ justifyContent: 'flex-start', paddingTop: 18 }}>
+            <label className="attendance-date-picker" aria-label="Consultar asistencia por fecha">
+              <CalendarDays size={16} />
+              <input type="date" value={queryDate} onChange={(event) => setQueryDate(event.target.value)} />
+            </label>
+          </div>
+
+          {queryError && <p className="attendance-panel-error" role="alert">{queryError}</p>}
+
+          {queryRecords.length === 0 ? (
+            <p className="attendance-panel-empty">No hay registros para esta fecha.</p>
+          ) : (
+            <div className="attendance-panel-list">
+              {queryRecords.map((record) => (
+                <div key={`${record.accountId}-${record.date ?? queryDate}`} className="attendance-panel-row">
+                  <div className="attendance-worker-meta">
+                    <span className="attendance-worker-name">{record.name}</span>
+                    <small className="attendance-worker-email">{record.role}</small>
+                  </div>
+                  <span className="attendance-role-pill">{record.role}</span>
+                  <span className="attendance-status-wrap">
+                    <small>{attendanceOptions.find((option) => option.value === record.status)?.label ?? record.status}</small>
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       </div>
     </main>

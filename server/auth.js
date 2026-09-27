@@ -4,7 +4,7 @@ import express from 'express'
 import { rateLimit } from 'express-rate-limit'
 import { pool } from './db.js'
 import { isAllowedHost, isAllowedOrigin } from './security.js'
-import { accountRoleById, defaultAccountRole } from '../shared/roles.js'
+import { accountRoleById, attendanceAccessRoles, attendanceWorkerRoles, defaultAccountRole } from '../shared/roles.js'
 
 const router = express.Router()
 const scrypt = promisify(scryptCallback)
@@ -25,8 +25,7 @@ const adminRateLimit = rateLimit({
   message: { error: 'Demasiadas consultas administrativas. Espera un momento.' },
 })
 const ownerManagementLockId = 1_993_004
-const attendanceAllowedRoles = new Set(['owner', 'accountant', 'warehouse_manager', 'secretary'])
-const attendanceWorkerRoles = ['accountant', 'warehouse_manager', 'secretary', 'employee']
+const attendanceAllowedRoles = new Set(attendanceAccessRoles)
 const attendanceStatusValues = new Set(['present', 'late', 'late_justified', 'absent'])
 
 router.use((_request, response, next) => {

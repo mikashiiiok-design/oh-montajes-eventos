@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { CalendarDays, Save, ShieldCheck } from 'lucide-react'
 import { apiRequest } from '../utils/api.js'
-import { accountRoleById } from '../../shared/roles.js'
+import { attendanceAccessRoles, attendanceWorkerRoles, getRoleInfo } from '../../shared/roles.js'
 import './AttendancePanelPage.css'
 
 const attendanceOptions = [
@@ -11,9 +11,8 @@ const attendanceOptions = [
   { value: 'absent', label: 'Inasistencia' },
 ]
 
-const accessRoles = new Set(['owner', 'accountant', 'warehouse_manager', 'secretary'])
-const workerRoles = new Set(['accountant', 'warehouse_manager', 'secretary', 'employee'])
-const attendanceWorkerRoles = ['accountant', 'warehouse_manager', 'secretary', 'employee']
+const accessRoles = new Set(attendanceAccessRoles)
+const workerRoles = new Set(attendanceWorkerRoles)
 
 function toDateInputValue(date) {
   const year = date.getFullYear()
@@ -39,6 +38,7 @@ function AttendancePanelPage() {
   const [workers, setWorkers] = useState([])
   const [draft, setDraft] = useState({})
   const [isSaving, setIsSaving] = useState(false)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [notice, setNotice] = useState('')
   const [error, setError] = useState('')
 
@@ -114,6 +114,7 @@ function AttendancePanelPage() {
             return [String(worker.id), existing?.status ?? 'present']
           }),
         ))
+        setHasUnsavedChanges(false)
         setError('')
       } catch (requestError) {
         if (isActive) {
@@ -152,6 +153,7 @@ function AttendancePanelPage() {
         body: JSON.stringify({ date: selectedDate, entries }),
       })
 
+      setHasUnsavedChanges(false)
       setNotice('El registro de asistencia quedó guardado correctamente.')
     } catch (requestError) {
       setError(requestError.message || 'No se pudo guardar la asistencia.')
@@ -233,13 +235,14 @@ function AttendancePanelPage() {
                     <span className="attendance-name">{worker.name}</span>
                     <small>{worker.email}</small>
                   </div>
-                  <span className="attendance-role-badge">{accountRoleById[worker.role]?.label ?? worker.role}</span>
+                  <span className="attendance-role-badge">{getRoleInfo(worker.role).label}</span>
                   <label className="attendance-select-wrap">
                     <select
                       value={draft[String(worker.id)] ?? 'present'}
                       onChange={(event) => {
                         const nextValue = event.target.value
                         setDraft((current) => ({ ...current, [String(worker.id)]: nextValue }))
+                        setHasUnsavedChanges(true)
                       }}
                       aria-label={`Estado de asistencia para ${worker.name}`}
                     >
@@ -254,7 +257,7 @@ function AttendancePanelPage() {
           )}
 
           <div className="attendance-actions">
-            <button type="button" onClick={handleSave} className="attendance-save" disabled={isSaving}>
+            <button type="button" onClick={handleSave} className="attendance-save" disabled={isSaving || !hasUnsavedChanges || visibleWorkers.length === 0}>
               {isSaving ? 'Guardando…' : 'Guardar registro'}
               {!isSaving && <Save size={15} />}
             </button>

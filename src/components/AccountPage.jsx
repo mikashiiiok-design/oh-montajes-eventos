@@ -4,6 +4,7 @@ import companyLogo from '../assets/LOGO-OH.webp'
 import AccountRoleBadge from './AccountRoleBadge.jsx'
 import { apiRequest } from '../utils/api.js'
 import { notifyAccountSync, subscribeToAccountSync } from '../utils/accountSync.js'
+import { attendanceAccessRoles } from '../../shared/roles.js'
 import './AccountPage.css'
 
 function AccountPage() {
@@ -21,10 +22,9 @@ function AccountPage() {
   const [developmentPanel, setDevelopmentPanel] = useState('')
   const developmentDialogRef = useRef(null)
 
-  const attendanceRoles = new Set(['owner', 'accountant', 'warehouse_manager', 'secretary'])
   const panelItems = [
     { id: 'admin', label: 'Administración', enabled: account?.role === 'owner' },
-    { id: 'attendance', label: 'Lista de asistencia', enabled: attendanceRoles.has(account?.role) },
+    { id: 'attendance', label: 'Lista de asistencia', enabled: attendanceAccessRoles.includes(account?.role) },
     { id: 'furniture', label: 'Mobiliario', enabled: account?.role === 'owner' },
     { id: 'orders', label: 'Registro de pedidos', enabled: account?.role === 'owner' },
     { id: 'chats', label: 'Chats', enabled: account?.role === 'owner' },

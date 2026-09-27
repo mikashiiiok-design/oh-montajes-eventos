@@ -43,6 +43,8 @@ function ChatsPage() {
   const initialChatIdRef = useRef(selectedChatId)
   const isStaff = staffRoles.has(account?.role)
   const isAuthorized = account?.role === 'client' || isStaff
+  const activeChatId = activeChat?.id
+  const activeMessageCount = activeChat?.messages.length
   const activeTypingUserIds = activeChat?.typingUsers?.map((user) => user.id).join(',') ?? ''
 
   useEffect(() => {
@@ -135,6 +137,23 @@ function ChatsPage() {
       document.removeEventListener('visibilitychange', refreshWhenVisible)
     }
   }, [isAuthorized, selectedChatId])
+
+  useEffect(() => {
+    if (!activeChatId || !selectedChatId || !isAuthorized) return undefined
+
+    const markConversationRead = () => {
+      if (document.visibilityState !== 'visible') return
+      apiRequest(`/api/chats/${selectedChatId}/read`, { method: 'POST' }).catch(() => {})
+    }
+    markConversationRead()
+    window.addEventListener('focus', markConversationRead)
+    document.addEventListener('visibilitychange', markConversationRead)
+
+    return () => {
+      window.removeEventListener('focus', markConversationRead)
+      document.removeEventListener('visibilitychange', markConversationRead)
+    }
+  }, [activeChatId, activeMessageCount, isAuthorized, selectedChatId])
 
   useEffect(() => {
     if (!selectedChatId || !isAuthorized || !isTyping) return undefined
@@ -370,6 +389,7 @@ function ChatsPage() {
                         {message.body && <p>{message.body}</p>}
                         {message.imageUrl && <a href={message.imageUrl} target="_blank" rel="noreferrer"><img src={message.imageUrl} alt="Imagen adjunta a la conversación" loading="lazy" onLoad={() => { if (shouldAutoScrollRef.current) scrollToLatestMessage() }} /></a>}
                         <time dateTime={message.createdAt}>{formatTime.format(new Date(message.createdAt))}</time>
+                        {isOwnMessage && message.isRead && <span className="chat-message-read">Mensaje visto.</span>}
                       </div>
                     </article>
                   )

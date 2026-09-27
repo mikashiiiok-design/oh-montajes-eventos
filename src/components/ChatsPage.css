@@ -54,6 +54,7 @@
 .chat-message-bubble p { margin: 0; font-size: 12px; line-height: 1.65; overflow-wrap: anywhere; white-space: pre-wrap; }
 .chat-message-bubble time { justify-self: end; color: var(--muted); font-size: 8px; }
 .chat-message.is-own .chat-message-bubble time { color: color-mix(in srgb, var(--on-accent) 66%, transparent); }
+.chat-message-read { justify-self: end; color: color-mix(in srgb, var(--on-accent) 78%, transparent); font-size: 8px; font-weight: 700; }
 .chat-message-bubble img { display: block; width: min(100%, 340px); max-height: 340px; border-radius: 8px; object-fit: contain; }
 .chat-message-typing { animation: chat-typing-enter 180ms ease-out both; }
 .chat-typing-bubble { display: inline-flex; min-width: 60px; min-height: 38px; align-items: center; justify-content: center; gap: 5px; padding: 0 13px; border: 1px solid color-mix(in srgb, var(--line) 82%, transparent); border-radius: 14px 14px 14px 3px; background: var(--surface); box-shadow: 0 3px 12px rgba(22,22,21,.055); }

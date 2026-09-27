@@ -16,6 +16,8 @@ const formatCurrency = new Intl.NumberFormat('es-CO', {
 })
 const formatTime = new Intl.DateTimeFormat('es-CO', { hour: '2-digit', minute: '2-digit' })
 const formatDate = new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })
+const formatDateTime = new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+const quoteStatusLabels = { sent: 'Pendiente de respuesta', accepted: 'Aceptada', rejected: 'Rechazada', superseded: 'Reemplazada' }
 
 function mergeMessages(currentMessages, refreshedMessages) {
   const messagesById = new Map(currentMessages.map((message) => [String(message.id), message]))
@@ -35,6 +37,7 @@ function ChatsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSending, setIsSending] = useState(false)
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
+  const [respondingToQuoteId, setRespondingToQuoteId] = useState(null)
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false)
   const [isWorkflowOpen, setIsWorkflowOpen] = useState(false)
   const [error, setError] = useState('')
@@ -272,6 +275,39 @@ function ChatsPage() {
     }
   }
 
+  async function refreshSelectedConversation() {
+    if (!selectedChatId) return
+    try {
+      const [{ chat }, { chats: activeChats }] = await Promise.all([
+        apiRequest(`/api/chats/${selectedChatId}`),
+        apiRequest('/api/chats'),
+      ])
+      setActiveChat((current) => current?.id === chat.id
+        ? { ...chat, messages: mergeMessages(current.messages, chat.messages) }
+        : chat)
+      setChats(activeChats)
+    } catch (requestError) {
+      setError(requestError.message)
+    }
+  }
+
+  async function respondToQuote(quote, action) {
+    if (!activeChat || respondingToQuoteId) return
+    setRespondingToQuoteId(String(quote.id))
+    setError('')
+    try {
+      await apiRequest(`/api/chats/${activeChat.id}/workflow/quotes/${quote.id}/${action}`, {
+        method: 'POST',
+        body: JSON.stringify({}),
+      })
+      await refreshSelectedConversation()
+    } catch (requestError) {
+      setError(requestError.message)
+    } finally {
+      setRespondingToQuoteId(null)
+    }
+  }
+
   function handleComposerKeyDown(event) {
     if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
       event.preventDefault()
@@ -421,12 +457,40 @@ function ChatsPage() {
                         {senderName}
                         <span className="chat-message-role" data-role={senderRole.id} style={{ '--role-color': senderRole.color }}>{senderRole.label}</span>
                       </span>
-                      <div className="chat-message-bubble">
-                        {message.body && <p>{message.body}</p>}
-                        {message.imageUrl && <a href={message.imageUrl} target="_blank" rel="noreferrer"><img src={message.imageUrl} alt="Imagen adjunta a la conversación" loading="lazy" onLoad={() => { if (shouldAutoScrollRef.current) scrollToLatestMessage() }} /></a>}
-                        <time dateTime={message.createdAt}>{formatTime.format(new Date(message.createdAt))}</time>
-                        {isOwnMessage && message.isRead && <span className="chat-message-read">Mensaje visto.</span>}
-                      </div>
+                      {message.quote ? (
+                        <div className="chat-quote-embed" aria-label={`Cotización versión ${message.quote.version}`}>
+                          <div className="chat-quote-embed-main">
+                            <div className="chat-quote-embed-heading"><span>OH / COTIZACIÓN</span><small data-status={message.quote.status}>{quoteStatusLabels[message.quote.status]}</small></div>
+                            <strong className="chat-quote-embed-title">Cotización · versión {message.quote.version}</strong>
+                            <div className="chat-quote-embed-dates"><span>Montaje <b>{formatDateTime.format(new Date(message.quote.setupAt))}</b></span><span>Desmontaje <b>{formatDateTime.format(new Date(message.quote.dismantleAt))}</b></span></div>
+                            <div className="chat-quote-embed-total"><span>Precio final</span><strong>{formatCurrency.format(Number(message.quote.totalAmount))}</strong></div>
+                            <div className="chat-quote-embed-actions">
+                              <button className="chat-quote-view-button" type="button" onClick={() => setIsWorkflowOpen(true)}>Ver cotización</button>
+                              {account.role === 'client' && activeChat.status === 'open' && message.quote.status === 'sent' && message.quote.isLatest && (
+                                <>
+                                  <button className="chat-quote-reject-button" type="button" onClick={() => respondToQuote(message.quote, 'reject')} disabled={respondingToQuoteId !== null}>
+                                    {respondingToQuoteId === String(message.quote.id) ? <LoaderCircle size={14} className="chats-spinner" /> : <X size={14} />} Rechazar
+                                  </button>
+                                  <button className="chat-quote-accept-button" type="button" onClick={() => respondToQuote(message.quote, 'accept')} disabled={respondingToQuoteId !== null}>
+                                    {respondingToQuoteId === String(message.quote.id) ? <LoaderCircle size={14} className="chats-spinner" /> : <Check size={14} />} Aprobar
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                            <div className="chat-quote-embed-footer">
+                              <time dateTime={message.createdAt}>{formatTime.format(new Date(message.createdAt))}</time>
+                              {isOwnMessage && message.isRead && <span>Mensaje visto.</span>}
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="chat-message-bubble">
+                          {message.body && <p>{message.body}</p>}
+                          {message.imageUrl && <a href={message.imageUrl} target="_blank" rel="noreferrer"><img src={message.imageUrl} alt="Imagen adjunta a la conversación" loading="lazy" onLoad={() => { if (shouldAutoScrollRef.current) scrollToLatestMessage() }} /></a>}
+                          <time dateTime={message.createdAt}>{formatTime.format(new Date(message.createdAt))}</time>
+                          {isOwnMessage && message.isRead && <span className="chat-message-read">Mensaje visto.</span>}
+                        </div>
+                      )}
                     </article>
                   )
                 })}
@@ -485,7 +549,7 @@ function ChatsPage() {
 
       {activeChat && (
         <dialog className="chat-workflow-dialog" ref={workflowDialogRef} onClose={() => setIsWorkflowOpen(false)} onCancel={(event) => { event.preventDefault(); setIsWorkflowOpen(false) }}>
-          <QuoteWorkflowPanel chat={activeChat} account={account} isStaff={isStaff} onClose={() => setIsWorkflowOpen(false)} />
+          <QuoteWorkflowPanel chat={activeChat} account={account} isStaff={isStaff} onClose={() => setIsWorkflowOpen(false)} onQuoteSubmitted={refreshSelectedConversation} />
         </dialog>
       )}
 

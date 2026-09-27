@@ -35,11 +35,20 @@
 .quote-version-item > span { flex: 0 0 auto; font-variant-numeric: tabular-nums; }
 .quote-version-terms { margin: 0; padding-top: 8px; border-top: 1px solid var(--line); color: var(--muted); font-size: 9px; line-height: 1.6; white-space: pre-wrap; }
 .quote-version-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 3px; }
-.quote-version-footer > span, .quote-accepted-by { color: var(--muted); font-size: 8px; line-height: 1.5; }
+.quote-version-footer > span, .quote-accepted-by, .quote-rejected-by { color: var(--muted); font-size: 8px; line-height: 1.5; }
 .quote-accepted-by { color: #38855e; }
+.quote-rejected-by { color: #a83e33; }
+.quote-response-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .quote-accept-button, .quote-send-button, .quote-add-line { display: inline-flex; min-height: 37px; align-items: center; justify-content: center; gap: 7px; padding: 0 11px; border: 0; background: var(--text); color: var(--bg); font-size: 9px; font-weight: 800; cursor: pointer; }
+.quote-reject-button { display: inline-flex; min-height: 37px; align-items: center; justify-content: center; gap: 7px; padding: 0 10px; border: 1px solid var(--line); background: transparent; color: #a83e33; font-size: 9px; font-weight: 800; cursor: pointer; }
+.quote-reject-button:hover:not(:disabled) { border-color: #a83e33; }
+.quote-reject-button:disabled { cursor: wait; opacity: .62; }
 .quote-accept-button:hover, .quote-send-button:hover:not(:disabled) { background: var(--accent); color: var(--on-accent); }
 .quote-accept-button:disabled, .quote-send-button:disabled { cursor: wait; opacity: .62; }
+.quote-version-dates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.quote-version-dates span { display: grid; gap: 3px; padding: 7px 8px; border: 1px solid var(--line); color: var(--muted); font-size: 8px; }
+.quote-version-dates b { color: var(--text); font-size: 9px; }
+.quote-version-rejection { margin: 0; padding: 8px 9px; border-left: 2px solid #a83e33; background: var(--bg); color: var(--muted); font-size: 9px; line-height: 1.5; }
 .quote-create-form, .order-create-form { display: grid; gap: 12px; padding: 15px; border-top: 2px solid var(--accent); background: var(--surface); }
 .quote-create-heading h4, .order-task-assignments h4 { margin: 0 0 4px; font-size: 12px; font-weight: 800; }
 .quote-create-heading p { margin: 0; color: var(--muted); font-size: 9px; line-height: 1.55; }
@@ -57,7 +66,8 @@
 .quote-customization-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
 .quote-add-line { justify-self: start; min-height: 32px; border: 1px solid var(--line); background: transparent; color: var(--text); }
 .quote-add-line:hover { border-color: var(--accent); color: var(--accent); }
-.quote-terms-grid { display: grid; grid-template-columns: minmax(0, 1fr) 170px; align-items: start; gap: 10px; }
+.quote-terms-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 10px; }
+.quote-terms-grid label:first-child { grid-column: 1 / -1; }
 .quote-terms-grid label textarea { min-height: 68px; padding: 8px 9px; resize: vertical; line-height: 1.5; }
 .quote-create-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 11px; border-top: 1px solid var(--line); }
 .quote-create-footer > div { display: grid; gap: 2px; }

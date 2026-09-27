@@ -20,6 +20,7 @@ const taskDefinitions = [
 const quoteStatuses = {
   sent: 'Enviada',
   accepted: 'Aceptada',
+  rejected: 'Rechazada',
   superseded: 'Reemplazada',
 }
 const taskStatuses = {
@@ -34,6 +35,7 @@ const formatCurrency = new Intl.NumberFormat('es-CO', {
   maximumFractionDigits: 0,
 })
 const formatDate = new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })
+const formatDateTime = new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 
 function makeQuoteLine(item = {}) {
   const product = productById.get(item.productId ?? item.product_id)
@@ -49,20 +51,13 @@ function makeQuoteLine(item = {}) {
   }
 }
 
-function formatDateOnly(value) {
-  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    const [year, month, day] = value.split('-').map(Number)
-    return formatDate.format(new Date(year, month - 1, day))
-  }
-  return formatDate.format(new Date(value))
-}
-
-function QuoteWorkflowPanel({ chat, account, isStaff, onClose }) {
+function QuoteWorkflowPanel({ chat, account, isStaff, onClose, onQuoteSubmitted }) {
   const [workflow, setWorkflow] = useState({ quotes: [], order: null })
   const [staff, setStaff] = useState([])
   const [quoteLines, setQuoteLines] = useState(() => chat.items.map((item) => makeQuoteLine(item)))
   const [quoteTerms, setQuoteTerms] = useState('')
-  const [validUntil, setValidUntil] = useState('')
+  const [quoteSetupAt, setQuoteSetupAt] = useState('')
+  const [quoteDismantleAt, setQuoteDismantleAt] = useState('')
   const [orderDraft, setOrderDraft] = useState({
     eventName: '',
     venue: '',
@@ -75,6 +70,7 @@ function QuoteWorkflowPanel({ chat, account, isStaff, onClose }) {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [isAccepting, setIsAccepting] = useState(null)
+  const [isRejecting, setIsRejecting] = useState(null)
   const [updatingTaskId, setUpdatingTaskId] = useState(null)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
@@ -125,10 +121,15 @@ function QuoteWorkflowPanel({ chat, account, isStaff, onClose }) {
   async function submitQuote(event) {
     event.preventDefault()
     if (isSaving) return
+    if (!quoteSetupAt || !quoteDismantleAt || new Date(quoteSetupAt) >= new Date(quoteDismantleAt)) {
+      setError('Indica fechas válidas de montaje y desmontaje, en ese orden.')
+      return
+    }
     setError('')
     setNotice('')
     setIsSaving(true)
     try {
+      const toIsoString = (value) => new Date(value).toISOString()
       await apiRequest(`/api/chats/${chat.id}/workflow/quotes`, {
         method: 'POST',
         body: JSON.stringify({
@@ -142,11 +143,12 @@ function QuoteWorkflowPanel({ chat, account, isStaff, onClose }) {
             customizations: Object.fromEntries(Object.entries(line.customizations).filter(([, value]) => value.trim())),
           })),
           terms: quoteTerms,
-          validUntil: validUntil || null,
+          setupAt: toIsoString(quoteSetupAt),
+          dismantleAt: toIsoString(quoteDismantleAt),
         }),
       })
-      await refreshWorkflow()
-      setNotice('La cotización quedó enviada en el chat.')
+      await onQuoteSubmitted?.()
+      onClose()
     } catch (requestError) {
       setError(requestError.message)
     } finally {
@@ -167,6 +169,25 @@ function QuoteWorkflowPanel({ chat, account, isStaff, onClose }) {
       setError(requestError.message)
     } finally {
       setIsAccepting(null)
+    }
+  }
+
+  async function rejectQuote(quote) {
+    if (isRejecting) return
+    setError('')
+    setNotice('')
+    setIsRejecting(quote.id)
+    try {
+      await apiRequest(`/api/chats/${chat.id}/workflow/quotes/${quote.id}/reject`, {
+        method: 'POST',
+        body: JSON.stringify({}),
+      })
+      await refreshWorkflow()
+      setNotice('Cotización rechazada. Puedes escribirle al equipo para solicitar ajustes.')
+    } catch (requestError) {
+      setError(requestError.message)
+    } finally {
+      setIsRejecting(null)
     }
   }
 
@@ -266,14 +287,22 @@ function QuoteWorkflowPanel({ chat, account, isStaff, onClose }) {
                 </div>
                 {quote.terms && <p className="quote-version-terms">{quote.terms}</p>}
                 <footer className="quote-version-footer">
-                  <span>Enviada por {quote.created_by_name} · {formatDate.format(new Date(quote.created_at))}{quote.valid_until ? ` · Vigente hasta ${formatDateOnly(quote.valid_until)}` : ''}</span>
+                  <span>Enviada por {quote.created_by_name} · {formatDate.format(new Date(quote.created_at))}</span>
                   {account.role === 'client' && quote.status === 'sent' && quote.isLatest && !workflow.order && (
-                    <button className="quote-accept-button" type="button" onClick={() => acceptQuote(quote)} disabled={isAccepting !== null}>
-                      {isAccepting === quote.id ? <LoaderCircle size={15} className="chats-spinner" /> : <Check size={15} />} Aceptar esta versión
-                    </button>
+                    <div className="quote-response-actions">
+                      <button className="quote-reject-button" type="button" onClick={() => rejectQuote(quote)} disabled={isAccepting !== null || isRejecting !== null}>
+                        {isRejecting === quote.id ? <LoaderCircle size={15} className="chats-spinner" /> : <X size={15} />} Rechazar
+                      </button>
+                      <button className="quote-accept-button" type="button" onClick={() => acceptQuote(quote)} disabled={isAccepting !== null || isRejecting !== null}>
+                        {isAccepting === quote.id ? <LoaderCircle size={15} className="chats-spinner" /> : <Check size={15} />} Aceptar
+                      </button>
+                    </div>
                   )}
                   {quote.status === 'accepted' && <strong className="quote-accepted-by">Aceptada por {quote.accepted_by_name}</strong>}
+                  {quote.status === 'rejected' && <strong className="quote-rejected-by">Rechazada por {quote.rejected_by_name}</strong>}
                 </footer>
+                <div className="quote-version-dates"><span>Montaje <b>{formatDateTime.format(new Date(quote.setup_at))}</b></span><span>Desmontaje <b>{formatDateTime.format(new Date(quote.dismantle_at))}</b></span></div>
+                {quote.rejection_reason && <p className="quote-version-rejection">Motivo: {quote.rejection_reason}</p>}
               </article>
             ))}
 
@@ -318,8 +347,9 @@ function QuoteWorkflowPanel({ chat, account, isStaff, onClose }) {
                 </div>
                 <button className="quote-add-line" type="button" onClick={() => setQuoteLines((current) => [...current, makeQuoteLine()])}><Plus size={15} /> Agregar artículo o servicio</button>
                 <div className="quote-terms-grid">
-                  <label>Condiciones<textarea maxLength={2000} rows={3} value={quoteTerms} onChange={(event) => setQuoteTerms(event.target.value)} placeholder="Disponibilidad, transporte, montaje, vigencia u otras condiciones acordadas." /></label>
-                  <label>Vigente hasta<input type="date" value={validUntil} onChange={(event) => setValidUntil(event.target.value)} /></label>
+                  <label>Condiciones<textarea maxLength={2000} rows={3} value={quoteTerms} onChange={(event) => setQuoteTerms(event.target.value)} placeholder="Disponibilidad, transporte, montaje u otras condiciones acordadas." /></label>
+                  <label>Fecha y hora de montaje<input type="datetime-local" required value={quoteSetupAt} onChange={(event) => setQuoteSetupAt(event.target.value)} /></label>
+                  <label>Fecha y hora de desmontaje<input type="datetime-local" required value={quoteDismantleAt} onChange={(event) => setQuoteDismantleAt(event.target.value)} /></label>
                 </div>
                 <div className="quote-create-footer">
                   <div><span>Total final</span><strong>{formatCurrency.format(quoteTotal)}</strong></div>

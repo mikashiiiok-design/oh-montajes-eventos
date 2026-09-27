@@ -125,8 +125,10 @@ router.get('/', async (request, response) => {
   const { account, chat } = authorized
 
   const quotesResult = await pool.query(
-        `SELECT quote.id, quote.version, quote.status, quote.total_amount,
+        `SELECT quote.id, quote.version, quote.status, quote.subtotal_amount,
+          quote.adjustment_amount, quote.adjustment_note, quote.total_amount,
           quote.currency, quote.terms, quote.setup_at, quote.dismantle_at, quote.created_at,
+          quote.event_name, quote.venue,
                  quote.accepted_at, quote.created_by, creator.name AS created_by_name,
                  quote.accepted_by, accepter.name AS accepted_by_name,
                  quote.rejected_at, quote.rejection_reason, quote.rejected_by,
@@ -210,6 +212,23 @@ router.post('/quotes', async (request, response) => {
 
   const parsedItems = parseQuoteItems(request.body?.items)
   if (!parsedItems) return response.status(400).json({ error: 'Revisa los productos, cantidades, precios y personalizaciones.' })
+  const eventName = typeof request.body?.eventName === 'string' ? request.body.eventName.trim() : ''
+  const venue = typeof request.body?.venue === 'string' ? request.body.venue.trim() : ''
+  if (!eventName || eventName.length > 160 || !venue || venue.length > 240) {
+    return response.status(400).json({ error: 'Indica el nombre del evento y el lugar antes de enviar la cotización.' })
+  }
+  const totalAmount = Number(request.body?.totalAmount)
+  if (!Number.isSafeInteger(totalAmount) || totalAmount < 0) {
+    return response.status(400).json({ error: 'El precio final debe ser un importe válido.' })
+  }
+  const adjustmentAmount = totalAmount - parsedItems.total
+  if (!Number.isSafeInteger(adjustmentAmount)) {
+    return response.status(400).json({ error: 'El ajuste al precio final no es válido.' })
+  }
+  const adjustmentNote = typeof request.body?.adjustmentNote === 'string' ? request.body.adjustmentNote.trim() : ''
+  if (adjustmentNote.length > 500 || (adjustmentAmount !== 0 && !adjustmentNote)) {
+    return response.status(400).json({ error: 'Explica el motivo del ajuste al subtotal (máximo 500 caracteres).' })
+  }
   const terms = typeof request.body?.terms === 'string' ? request.body.terms.trim() : ''
   if (terms.length > 2000) return response.status(400).json({ error: 'Las condiciones no pueden superar 2.000 caracteres.' })
   const setupAt = parseDateTime(request.body?.setupAt)
@@ -252,10 +271,12 @@ router.post('/quotes', async (request, response) => {
     )
     const quote = await client.query(
       `INSERT INTO chat_quote_versions
-       (chat_id, version, status, total_amount, terms, setup_at, dismantle_at, created_by)
-       VALUES ($1, $2, 'sent', $3, $4, $5, $6, $7)
+       (chat_id, version, status, subtotal_amount, adjustment_amount, adjustment_note,
+        total_amount, terms, event_name, venue, setup_at, dismantle_at, created_by)
+       VALUES ($1, $2, 'sent', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING id`,
-      [chat.id, version, parsedItems.total, terms, setupAt.toISOString(), dismantleAt.toISOString(), account.id],
+      [chat.id, version, parsedItems.total, adjustmentAmount, adjustmentNote, totalAmount,
+        terms, eventName, venue, setupAt.toISOString(), dismantleAt.toISOString(), account.id],
     )
     const quoteId = quote.rows[0].id
 
@@ -276,7 +297,7 @@ router.post('/quotes', async (request, response) => {
     )
     await client.query('UPDATE chat_conversations SET last_message_at = NOW() WHERE id = $1', [chat.id])
     await client.query('COMMIT')
-    return response.status(201).json({ quoteId, version, totalAmount: parsedItems.total })
+    return response.status(201).json({ quoteId, version, subtotalAmount: parsedItems.total, adjustmentAmount, totalAmount })
   } catch (error) {
     await client.query('ROLLBACK')
     throw error
@@ -432,18 +453,18 @@ router.post('/orders', async (request, response) => {
     return response.status(409).json({ error: 'Reabre la conversación antes de crear el pedido.' })
   }
 
-  const eventName = typeof request.body?.eventName === 'string' ? request.body.eventName.trim() : ''
-  const venue = typeof request.body?.venue === 'string' ? request.body.venue.trim() : ''
+  const requestedEventName = typeof request.body?.eventName === 'string' ? request.body.eventName.trim() : ''
+  const requestedVenue = typeof request.body?.venue === 'string' ? request.body.venue.trim() : ''
   const setupAt = parseDateTime(request.body?.setupAt)
   const eventAt = parseDateTime(request.body?.eventAt)
   const dismantleAt = parseDateTime(request.body?.dismantleAt)
   const coordinatorId = parseId(String(request.body?.coordinatorId ?? ''))
   const taskAssignments = request.body?.taskAssignments
-  if (!eventName || eventName.length > 160 || !venue || venue.length > 240) {
-    return response.status(400).json({ error: 'Indica el nombre del evento y el lugar (máximo 160 y 240 caracteres).' })
+  if (requestedEventName.length > 160 || requestedVenue.length > 240) {
+    return response.status(400).json({ error: 'El evento o lugar supera su longitud permitida.' })
   }
-  if (!setupAt || !eventAt || !dismantleAt || setupAt > eventAt || eventAt > dismantleAt) {
-    return response.status(400).json({ error: 'Revisa las fechas: preparación, evento y desmontaje deben estar en orden.' })
+  if (!eventAt) {
+    return response.status(400).json({ error: 'Indica la fecha y hora del evento.' })
   }
   if (!coordinatorId || !taskAssignments || typeof taskAssignments !== 'object') {
     return response.status(400).json({ error: 'Asigna una persona coordinadora y responsables para cada tarea.' })
@@ -477,7 +498,7 @@ router.post('/orders', async (request, response) => {
       return response.status(409).json({ error: 'Este chat ya tiene un pedido asociado.' })
     }
     const acceptedQuote = await client.query(
-      `SELECT id FROM chat_quote_versions
+      `SELECT id, event_name, venue, setup_at, dismantle_at FROM chat_quote_versions
        WHERE chat_id = $1 AND status = 'accepted' FOR UPDATE`,
       [chat.id],
     )
@@ -485,14 +506,27 @@ router.post('/orders', async (request, response) => {
       await client.query('ROLLBACK')
       return response.status(409).json({ error: 'El cliente debe aceptar una cotización antes de crear el pedido.' })
     }
-    const quoteId = acceptedQuote.rows[0].id
+    const acceptedQuoteData = acceptedQuote.rows[0]
+    const quoteId = acceptedQuoteData.id
+    const eventName = acceptedQuoteData.event_name || requestedEventName
+    const venue = acceptedQuoteData.venue || requestedVenue
+    const orderSetupAt = acceptedQuoteData.setup_at ? new Date(acceptedQuoteData.setup_at) : setupAt
+    const orderDismantleAt = acceptedQuoteData.dismantle_at ? new Date(acceptedQuoteData.dismantle_at) : dismantleAt
+    if (!eventName || !venue) {
+      await client.query('ROLLBACK')
+      return response.status(409).json({ error: 'La cotización aceptada no tiene evento y lugar. Actualízala antes de crear el pedido.' })
+    }
+    if (!orderSetupAt || !eventAt || !orderDismantleAt || orderSetupAt > eventAt || eventAt > orderDismantleAt) {
+      await client.query('ROLLBACK')
+      return response.status(400).json({ error: 'Revisa las fechas: montaje, evento y desmontaje deben estar en orden.' })
+    }
     const order = await client.query(
       `INSERT INTO orders
        (chat_id, quote_version_id, event_name, venue, setup_at, event_at,
         dismantle_at, coordinator_id, created_by)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING id`,
-      [chat.id, quoteId, eventName, venue, setupAt.toISOString(), eventAt.toISOString(), dismantleAt.toISOString(), coordinatorId, account.id],
+      [chat.id, quoteId, eventName, venue, orderSetupAt.toISOString(), eventAt.toISOString(), orderDismantleAt.toISOString(), coordinatorId, account.id],
     )
     const orderId = order.rows[0].id
     await client.query(

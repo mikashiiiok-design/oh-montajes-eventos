@@ -241,13 +241,6 @@ function AttendancePanelPage() {
           </div>
         </section>
 
-        <section className="attendance-panel-toolbar" aria-label="Selector de fecha del registro">
-          <div className="attendance-date-picker attendance-date-picker--compact">
-            <CalendarDays size={15} />
-            <input type="date" value={selectedDate} onChange={(event) => setSelectedDate(event.target.value)} />
-          </div>
-        </section>
-
         <section className="attendance-panel-summary">
           <div className="attendance-panel-summary-item">
             <span className="attendance-summary-label">Fecha actual</span>

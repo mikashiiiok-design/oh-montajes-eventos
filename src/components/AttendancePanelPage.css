@@ -72,42 +72,6 @@
   line-height: .96;
 }
 
-.attendance-panel-toolbar {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 20px;
-}
-
-.attendance-date-picker {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 46px;
-  padding: 0 14px;
-  border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.02);
-  color: var(--text);
-}
-
-.attendance-date-picker--compact {
-  min-height: 42px;
-  border-color: rgba(255, 255, 255, 0.08);
-}
-
-.attendance-date-picker input {
-  min-width: 138px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--text);
-  font: inherit;
-  font-size: 13px;
-}
-
-.attendance-date-picker input::-webkit-calendar-picker-indicator {
-  filter: invert(1) brightness(1.1);
-}
-
 .attendance-panel-summary {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -340,7 +304,7 @@
 
 .attendance-panel-save:disabled {
   opacity: 0.55;
-  cursor: wait;
+  cursor: not-allowed;
 }
 
 .attendance-panel-state {

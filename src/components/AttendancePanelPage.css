@@ -123,6 +123,43 @@
   color: #d0f3e4;
 }
 
+.attendance-date-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text);
+}
+
+.attendance-date-picker:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(255, 115, 44, 0.16);
+}
+
+.attendance-date-picker svg {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.attendance-date-picker input {
+  min-width: 138px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.attendance-date-picker input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: sepia(1) saturate(8) hue-rotate(-25deg) brightness(1.15);
+}
+
 .attendance-panel-card {
   border: 1px solid var(--line);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.015), rgba(0, 0, 0, 0.04));

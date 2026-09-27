@@ -314,17 +314,15 @@ function AttendancePanelPage() {
         </section>
 
         <section className="attendance-panel-card" aria-label="Consulta de registros de asistencia">
-          <div className="attendance-panel-table-header">
+          <div className="attendance-panel-table-header attendance-panel-table-header--with-picker">
             <span>Consulta de registros</span>
-            <span>Fecha</span>
+            <span className="attendance-panel-table-header-date">
+              <label className="attendance-date-picker attendance-date-picker--compact" aria-label="Consultar asistencia por fecha">
+                <CalendarDays size={15} />
+                <input type="date" value={queryDate} onChange={(event) => setQueryDate(event.target.value)} />
+              </label>
+            </span>
             <span>Estado</span>
-          </div>
-
-          <div className="attendance-panel-actions" style={{ justifyContent: 'flex-start', paddingTop: 18 }}>
-            <label className="attendance-date-picker" aria-label="Consultar asistencia por fecha">
-              <CalendarDays size={16} />
-              <input type="date" value={queryDate} onChange={(event) => setQueryDate(event.target.value)} />
-            </label>
           </div>
 
           {queryError && <p className="attendance-panel-error" role="alert">{queryError}</p>}

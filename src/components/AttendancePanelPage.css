@@ -189,6 +189,15 @@
   text-transform: uppercase;
 }
 
+.attendance-panel-table-header--with-picker {
+  align-items: center;
+}
+
+.attendance-panel-table-header-date {
+  display: flex;
+  align-items: center;
+}
+
 .attendance-panel-row {
   min-height: 80px;
   padding: 18px 16px;

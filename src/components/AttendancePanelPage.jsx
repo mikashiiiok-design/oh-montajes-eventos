@@ -239,6 +239,11 @@ function AttendancePanelPage() {
             <p className="attendance-panel-eyebrow"><span>CONTROL / 02</span> Registro diario</p>
             <h1>Lista de asistencia</h1>
           </div>
+
+          <label className="attendance-date-picker attendance-date-picker--inline" aria-label="Seleccionar fecha de asistencia">
+            <CalendarDays size={15} />
+            <input type="date" value={selectedDate} onChange={(event) => setSelectedDate(event.target.value)} />
+          </label>
         </section>
 
         <section className="attendance-panel-summary">

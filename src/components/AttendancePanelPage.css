@@ -44,7 +44,7 @@
 
 .attendance-panel-heading {
   display: flex;
-  align-items: flex-start;
+  align-items: flex-end;
   justify-content: space-between;
   gap: 24px;
   margin-bottom: 18px;
@@ -70,6 +70,11 @@
   font-size: clamp(42px, 5vw, 84px);
   font-weight: 600;
   line-height: .96;
+}
+
+.attendance-date-picker--inline {
+  align-self: flex-end;
+  margin-bottom: 6px;
 }
 
 .attendance-panel-summary {

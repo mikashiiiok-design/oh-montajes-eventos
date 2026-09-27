@@ -301,13 +301,8 @@ function AttendancePanelPage() {
                     <span className="attendance-worker-name">{worker.name}</span>
                     <small className="attendance-worker-email">{worker.email}</small>
                   </div>
-<<<<<<< HEAD
-                  <span className="attendance-role-badge">{getRoleInfo(worker.role).label}</span>
-                  <label className="attendance-select-wrap">
-=======
                   <span className="attendance-role-pill" data-role={worker.role}>{getRoleInfo(worker.role).label}</span>
                   <label className="attendance-status-wrap">
->>>>>>> main
                     <select
                       value={draft[String(worker.id)] ?? ''}
                       disabled={isDateLocked || isSaving}
@@ -340,7 +335,6 @@ function AttendancePanelPage() {
               className="attendance-panel-save"
               disabled={isSaving || isDateLocked || !hasUnsavedChanges || hasIncompleteSelection || visibleWorkers.length === 0}
             >
->>>>>>> main
               {isSaving ? 'Guardando…' : 'Guardar registro'}
               {!isSaving && <Save size={15} />}
             </button>

@@ -196,7 +196,9 @@
 .attendance-panel-table-header-date {
   display: inline-flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 10px;
+  margin-left: auto;
 }
 
 .attendance-panel-table-heading-label {

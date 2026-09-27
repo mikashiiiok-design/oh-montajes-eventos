@@ -15,11 +15,13 @@ import AttendancePanelPage from './components/AttendancePanelPage.jsx'
 import ChatsPage from './components/ChatsPage.jsx'
 import GalleryPage from './components/GalleryPage.jsx'
 import LegalPage from './components/LegalPage.jsx'
+import MaintenancePage from './components/MaintenancePage.jsx'
 import { useScrollReveal } from './hooks/useScrollReveal.js'
 import { useSmoothAnchorNavigation } from './hooks/useSmoothAnchorNavigation.js'
 import './portfolio.css'
 
 const THEME_STORAGE_KEY = 'oh-theme'
+const MAINTENANCE_MODE = false
 
 function getInitialTheme() {
   const savedTheme = window.localStorage.getItem(THEME_STORAGE_KEY)
@@ -70,6 +72,8 @@ function PortfolioApp({ pageContent }) {
 }
 
 function App() {
+  if (MAINTENANCE_MODE) return <MaintenancePage />
+
   const pathname = window.location.pathname.replace(/\/+$/, '') || '/'
 
   if (pathname === '/404') return <><PageLoader /><ErrorPage statusCode={404} /></>

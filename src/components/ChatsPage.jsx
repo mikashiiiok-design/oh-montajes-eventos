@@ -35,7 +35,8 @@ function ChatsPage() {
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false)
   const [error, setError] = useState('')
   const invoiceDialogRef = useRef(null)
-  const messagesEndRef = useRef(null)
+  const messageListRef = useRef(null)
+  const shouldAutoScrollRef = useRef(true)
   const imagePreviewRef = useRef('')
   const initialChatIdRef = useRef(selectedChatId)
   const isStaff = staffRoles.has(account?.role)
@@ -133,7 +134,7 @@ function ChatsPage() {
   }, [isAuthorized, selectedChatId])
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+    if (shouldAutoScrollRef.current) scrollToLatestMessage()
   }, [activeChat?.messages.length])
 
   useEffect(() => {
@@ -154,8 +155,22 @@ function ChatsPage() {
     setSelectedImage(file)
   }
 
+  function scrollToLatestMessage() {
+    const messageList = messageListRef.current
+    if (!messageList) return
+    const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+    messageList.scrollTo({ top: messageList.scrollHeight, behavior })
+  }
+
+  function handleMessageListScroll() {
+    const messageList = messageListRef.current
+    if (!messageList) return
+    shouldAutoScrollRef.current = messageList.scrollHeight - messageList.scrollTop - messageList.clientHeight < 72
+  }
+
   function selectChat(chatId) {
     const nextId = String(chatId)
+    shouldAutoScrollRef.current = true
     setSelectedChatId(nextId)
     setActiveChat(null)
     setError('')
@@ -174,6 +189,7 @@ function ChatsPage() {
         method: 'POST',
         body: JSON.stringify({ body: draft.trim(), image }),
       })
+      shouldAutoScrollRef.current = true
       setActiveChat((current) => current?.id === activeChat.id
         ? { ...current, messages: [...current.messages, message] }
         : current)
@@ -302,7 +318,7 @@ function ChatsPage() {
                 )}
               </header>
 
-              <div className="chat-message-list" aria-live="polite">
+              <div className="chat-message-list" ref={messageListRef} onScroll={handleMessageListScroll} aria-live="polite">
                 <div className="chat-start-note"><span>Solicitud creada</span><time>{formatDate.format(new Date(activeChat.createdAt))}</time></div>
                 {activeChat.messages.map((message) => {
                   const isOwnMessage = String(message.senderId) === String(account.id)
@@ -316,13 +332,12 @@ function ChatsPage() {
                       </span>
                       <div className="chat-message-bubble">
                         {message.body && <p>{message.body}</p>}
-                        {message.imageUrl && <a href={message.imageUrl} target="_blank" rel="noreferrer"><img src={message.imageUrl} alt="Imagen adjunta a la conversación" loading="lazy" /></a>}
+                        {message.imageUrl && <a href={message.imageUrl} target="_blank" rel="noreferrer"><img src={message.imageUrl} alt="Imagen adjunta a la conversación" loading="lazy" onLoad={() => { if (shouldAutoScrollRef.current) scrollToLatestMessage() }} /></a>}
                         <time dateTime={message.createdAt}>{formatTime.format(new Date(message.createdAt))}</time>
                       </div>
                     </article>
                   )
                 })}
-                <div ref={messagesEndRef} />
               </div>
 
               {error && <p className="chat-error" role="alert">{error}</p>}

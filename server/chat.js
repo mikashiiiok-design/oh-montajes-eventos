@@ -166,7 +166,7 @@ router.get('/:chatId', verifyOrigin, async (request, response) => {
   const conversation = await getAuthorizedChat(chatId, account, response)
   if (!conversation) return
 
-  const [itemsResult, messagesResult] = await Promise.all([
+  const [itemsResult, messagesResult, typingResult] = await Promise.all([
     pool.query(
       `SELECT product_id, product_name, category_name, unit_price, quantity
        FROM chat_quote_items WHERE chat_id = $1 ORDER BY id ASC`,
@@ -181,6 +181,15 @@ router.get('/:chatId', verifyOrigin, async (request, response) => {
        WHERE message.chat_id = $1 ORDER BY message.created_at ASC, message.id ASC`,
       [chatId],
     ),
+    pool.query(
+      `SELECT account.id, account.name, account.role
+       FROM chat_typing_status AS typing
+       JOIN customer_accounts AS account ON account.id = typing.account_id
+       WHERE typing.chat_id = $1 AND typing.account_id <> $2
+         AND typing.updated_at > NOW() - INTERVAL '8 seconds'
+       ORDER BY typing.updated_at DESC`,
+      [chatId, account.id],
+    ),
   ])
 
   return response.json({
@@ -192,6 +201,11 @@ router.get('/:chatId', verifyOrigin, async (request, response) => {
       customerName: conversation.customer_name,
       customerEmail: conversation.customer_email,
       items: itemsResult.rows,
+      typingUsers: typingResult.rows.map((user) => ({
+        id: user.id,
+        name: user.name,
+        role: user.role,
+      })),
       messages: messagesResult.rows.map((message) => ({
         id: message.id,
         senderId: message.sender_id,
@@ -203,6 +217,35 @@ router.get('/:chatId', verifyOrigin, async (request, response) => {
       })),
     },
   })
+})
+
+router.post('/:chatId/typing', verifyOrigin, async (request, response) => {
+  const account = await getAuthorizedAccount(request, response)
+  if (!account) return
+  const chatId = parseId(request.params.chatId)
+  if (!chatId) return response.status(400).json({ error: 'El identificador del chat no es válido.' })
+
+  const conversation = await getAuthorizedChat(chatId, account, response)
+  if (!conversation) return
+  if (conversation.status !== 'open') {
+    return response.status(409).json({ error: 'Esta conversación está cerrada.' })
+  }
+
+  if (request.body?.isTyping === true) {
+    await pool.query(
+      `INSERT INTO chat_typing_status (chat_id, account_id, updated_at)
+       VALUES ($1, $2, NOW())
+       ON CONFLICT (chat_id, account_id) DO UPDATE SET updated_at = NOW()`,
+      [chatId, account.id],
+    )
+  } else {
+    await pool.query(
+      'DELETE FROM chat_typing_status WHERE chat_id = $1 AND account_id = $2',
+      [chatId, account.id],
+    )
+  }
+
+  return response.status(204).end()
 })
 
 router.post('/:chatId/messages', verifyOrigin, async (request, response) => {
@@ -230,6 +273,7 @@ router.post('/:chatId/messages', verifyOrigin, async (request, response) => {
     [chatId, account.id, body || null, image.image, image.mime],
   )
   await pool.query('UPDATE chat_conversations SET last_message_at = NOW() WHERE id = $1', [chatId])
+  await pool.query('DELETE FROM chat_typing_status WHERE chat_id = $1 AND account_id = $2', [chatId, account.id])
   const message = result.rows[0]
 
   return response.status(201).json({
@@ -283,6 +327,7 @@ router.post('/:chatId/close', verifyOrigin, async (request, response) => {
     [chatId],
   )
   if (!result.rowCount) return response.status(404).json({ error: 'El chat ya está cerrado o no existe.' })
+  await pool.query('DELETE FROM chat_typing_status WHERE chat_id = $1', [chatId])
   return response.json({ status: 'closed' })
 })
 

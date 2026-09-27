@@ -161,6 +161,15 @@ export async function initializeDatabase() {
     CREATE INDEX IF NOT EXISTS chat_typing_status_updated_idx
     ON chat_typing_status (chat_id, updated_at DESC)
   `)
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS chat_read_status (
+      chat_id BIGINT NOT NULL REFERENCES chat_conversations(id) ON DELETE CASCADE,
+      reader_side VARCHAR(8) NOT NULL CHECK (reader_side IN ('client', 'staff')),
+      last_read_message_id BIGINT NOT NULL REFERENCES chat_messages(id) ON DELETE CASCADE,
+      PRIMARY KEY (chat_id, reader_side)
+    )
+  `)
 }
 
 pool.on('error', (error) => {

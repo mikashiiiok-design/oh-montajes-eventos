@@ -175,11 +175,17 @@ router.get('/:chatId', verifyOrigin, async (request, response) => {
     pool.query(
       `SELECT message.id, message.sender_id, sender.name AS sender_name,
               sender.role AS sender_role, message.body,
-              message.image_data IS NOT NULL AS has_image, message.created_at
+              message.image_data IS NOT NULL AS has_image, message.created_at,
+              CASE WHEN message.sender_id = $2 THEN EXISTS (
+                SELECT 1 FROM chat_read_status AS read_status
+                WHERE read_status.chat_id = message.chat_id
+                  AND read_status.reader_side = CASE WHEN sender.role = 'client' THEN 'staff' ELSE 'client' END
+                  AND message.id <= read_status.last_read_message_id
+              ) ELSE FALSE END AS is_read
        FROM chat_messages AS message
        LEFT JOIN customer_accounts AS sender ON sender.id = message.sender_id
        WHERE message.chat_id = $1 ORDER BY message.created_at ASC, message.id ASC`,
-      [chatId],
+      [chatId, account.id],
     ),
     pool.query(
       `SELECT account.id, account.name, account.role
@@ -214,9 +220,44 @@ router.get('/:chatId', verifyOrigin, async (request, response) => {
         body: message.body,
         imageUrl: message.has_image ? `/api/chats/messages/${message.id}/image` : null,
         createdAt: message.created_at,
+        isRead: message.is_read,
       })),
     },
   })
+})
+
+router.post('/:chatId/read', verifyOrigin, async (request, response) => {
+  const account = await getAuthorizedAccount(request, response)
+  if (!account) return
+  const chatId = parseId(request.params.chatId)
+  if (!chatId) return response.status(400).json({ error: 'El identificador del chat no es válido.' })
+
+  const conversation = await getAuthorizedChat(chatId, account, response)
+  if (!conversation) return
+
+  const readerSide = account.role === 'client' ? 'client' : 'staff'
+  const latestIncomingMessage = await pool.query(
+    `SELECT message.id
+     FROM chat_messages AS message
+     JOIN customer_accounts AS sender ON sender.id = message.sender_id
+     WHERE message.chat_id = $1
+       AND (($2 = 'client' AND sender.role <> 'client')
+         OR ($2 = 'staff' AND sender.role = 'client'))
+     ORDER BY message.created_at DESC, message.id DESC
+     LIMIT 1`,
+    [chatId, readerSide],
+  )
+  if (!latestIncomingMessage.rowCount) return response.status(204).end()
+
+  await pool.query(
+    `INSERT INTO chat_read_status (chat_id, reader_side, last_read_message_id)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (chat_id, reader_side) DO UPDATE
+     SET last_read_message_id = GREATEST(chat_read_status.last_read_message_id, EXCLUDED.last_read_message_id)`,
+    [chatId, readerSide, latestIncomingMessage.rows[0].id],
+  )
+
+  return response.status(204).end()
 })
 
 router.post('/:chatId/typing', verifyOrigin, async (request, response) => {

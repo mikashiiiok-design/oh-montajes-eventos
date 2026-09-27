@@ -194,8 +194,17 @@
 }
 
 .attendance-panel-table-header-date {
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  gap: 10px;
+}
+
+.attendance-panel-table-heading-label {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
 }
 
 .attendance-panel-row {

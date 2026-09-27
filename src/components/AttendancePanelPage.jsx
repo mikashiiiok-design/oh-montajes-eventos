@@ -317,6 +317,7 @@ function AttendancePanelPage() {
           <div className="attendance-panel-table-header attendance-panel-table-header--with-picker">
             <span>Consulta de registros</span>
             <span className="attendance-panel-table-header-date">
+              <span className="attendance-panel-table-heading-label">Fecha</span>
               <label className="attendance-date-picker attendance-date-picker--compact" aria-label="Consultar asistencia por fecha">
                 <CalendarDays size={15} />
                 <input type="date" value={queryDate} onChange={(event) => setQueryDate(event.target.value)} />

@@ -45,6 +45,7 @@ function ChatsPage() {
   const isAuthorized = account?.role === 'client' || isStaff
   const activeChatId = activeChat?.id
   const activeMessageCount = activeChat?.messages.length
+  const activeReadMessageCount = activeChat?.messages.filter((message) => String(message.senderId) === String(account?.id) && message.isRead).length ?? 0
   const activeTypingUserIds = activeChat?.typingUsers?.map((user) => user.id).join(',') ?? ''
 
   useEffect(() => {
@@ -127,7 +128,7 @@ function ChatsPage() {
       if (document.visibilityState === 'visible') refreshConversation()
     }
     refreshConversation()
-    const intervalId = window.setInterval(refreshConversation, 4000)
+    const intervalId = window.setInterval(refreshConversation, 2000)
     window.addEventListener('focus', refreshWhenVisible)
     document.addEventListener('visibilitychange', refreshWhenVisible)
     return () => {
@@ -178,7 +179,7 @@ function ChatsPage() {
 
   useEffect(() => {
     if (shouldAutoScrollRef.current) scrollToLatestMessage()
-  }, [activeChat?.messages.length, activeTypingUserIds])
+  }, [activeChat?.messages.length, activeReadMessageCount, activeTypingUserIds])
 
   useEffect(() => {
     const dialog = invoiceDialogRef.current

@@ -249,7 +249,7 @@ export async function initializeDatabase() {
   await pool.query(`
     ALTER TABLE chat_messages
     ADD CONSTRAINT chat_messages_message_type_check
-    CHECK (message_type IN ('text', 'quote'))
+    CHECK (message_type IN ('text', 'quote', 'order'))
   `)
 
   await pool.query(`
@@ -273,6 +273,16 @@ export async function initializeDatabase() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       CHECK (setup_at <= event_at AND event_at <= dismantle_at)
     )
+  `)
+
+  await pool.query(`
+    ALTER TABLE chat_messages
+    ADD COLUMN IF NOT EXISTS order_id BIGINT REFERENCES orders(id) ON DELETE SET NULL
+  `)
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS chat_messages_order_idx
+    ON chat_messages (order_id) WHERE order_id IS NOT NULL
   `)
 
   await pool.query(`

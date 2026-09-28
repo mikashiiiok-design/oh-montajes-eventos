@@ -546,9 +546,9 @@ router.post('/orders', async (request, response) => {
       )
     }
     await client.query(
-      `INSERT INTO chat_messages (chat_id, sender_id, body)
-       VALUES ($1, $2, $3)`,
-      [chat.id, account.id, `Pedido OH-${String(orderId).padStart(6, '0')} creado y enviado a planificación.`],
+      `INSERT INTO chat_messages (chat_id, sender_id, body, message_type, order_id)
+       VALUES ($1, $2, $3, 'order', $4)`,
+      [chat.id, account.id, `Pedido OH-${String(orderId).padStart(6, '0')} creado y enviado a planificación.`, orderId],
     )
     await client.query('UPDATE chat_conversations SET last_message_at = NOW() WHERE id = $1', [chat.id])
     await client.query('COMMIT')

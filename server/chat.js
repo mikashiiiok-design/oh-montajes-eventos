@@ -181,6 +181,19 @@ router.get('/:chatId', verifyOrigin, async (request, response) => {
               quote.setup_at AS quote_setup_at, quote.dismantle_at AS quote_dismantle_at,
               quote.version = (SELECT MAX(version) FROM chat_quote_versions
                    WHERE chat_id = message.chat_id) AS quote_is_latest,
+              message_order.id AS order_id, message_order.status AS order_status,
+              message_order.event_name AS order_event_name, message_order.venue AS order_venue,
+              message_order.setup_at AS order_setup_at, message_order.event_at AS order_event_at,
+              message_order.dismantle_at AS order_dismantle_at,
+              order_coordinator.name AS order_coordinator_name,
+              (SELECT json_agg(json_build_object(
+                'label', task.label,
+                'status', task.status,
+                'assignedToName', assignee.name
+              ) ORDER BY task.id)
+               FROM order_tasks AS task
+               JOIN customer_accounts AS assignee ON assignee.id = task.assigned_to
+               WHERE task.order_id = message_order.id) AS order_tasks,
               CASE WHEN message.sender_id = $2 THEN EXISTS (
                 SELECT 1 FROM chat_read_status AS read_status
                 WHERE read_status.chat_id = message.chat_id
@@ -190,6 +203,8 @@ router.get('/:chatId', verifyOrigin, async (request, response) => {
        FROM chat_messages AS message
        LEFT JOIN customer_accounts AS sender ON sender.id = message.sender_id
       LEFT JOIN chat_quote_versions AS quote ON quote.id = message.quote_version_id
+        LEFT JOIN orders AS message_order ON message_order.id = message.order_id
+        LEFT JOIN customer_accounts AS order_coordinator ON order_coordinator.id = message_order.coordinator_id
        WHERE message.chat_id = $1 ORDER BY message.created_at ASC, message.id ASC`,
       [chatId, account.id],
     ),
@@ -241,6 +256,17 @@ router.get('/:chatId', verifyOrigin, async (request, response) => {
           setupAt: message.quote_setup_at,
           dismantleAt: message.quote_dismantle_at,
           isLatest: message.quote_is_latest,
+        } : null,
+        order: message.order_id ? {
+          id: message.order_id,
+          status: message.order_status,
+          eventName: message.order_event_name,
+          venue: message.order_venue,
+          setupAt: message.order_setup_at,
+          eventAt: message.order_event_at,
+          dismantleAt: message.order_dismantle_at,
+          coordinatorName: message.order_coordinator_name,
+          tasks: message.order_tasks ?? [],
         } : null,
       })),
     },

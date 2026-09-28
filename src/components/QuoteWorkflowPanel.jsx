@@ -459,7 +459,7 @@ function QuoteWorkflowPanel({ chat, account, isStaff, isOpen, onClose, onQuoteSu
                   {workflow.order.tasks.map((task) => (
                     <label className="order-task-row" key={task.id}>
                       <span><strong>{task.label}</strong><small>{task.assigned_to_name}</small></span>
-                      <select value={task.status} disabled={updatingTaskId === task.id} onChange={(event) => updateTask(task.id, event.target.value)} aria-label={`Estado de ${task.label}`}>
+                      <select value={task.status} disabled={!isStaff || updatingTaskId === task.id} onChange={(event) => updateTask(task.id, event.target.value)} aria-label={`Estado de ${task.label}`}>
                         {Object.entries(taskStatuses).map(([value, label]) => <option value={value} key={value}>{label}</option>)}
                       </select>
                     </label>

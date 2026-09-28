@@ -97,6 +97,14 @@
 .chat-quote-embed-actions .chat-quote-accept-button:hover { filter: brightness(.95); }
 .chat-quote-embed-actions .chat-quote-reject-button { color: #a83e33; }
 .chat-quote-embed-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 8px; }
+.chat-order-embed-dates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.chat-order-embed-dates span { display: grid; gap: 3px; padding: 7px 8px; border: 1px solid var(--line); color: var(--muted); font-size: 8px; }
+.chat-order-embed-dates b { color: var(--text); font-size: 9px; }
+.chat-order-embed-coordinator, .chat-order-embed-tasks { display: grid; gap: 7px; color: var(--muted); font-size: 8px; }
+.chat-order-embed-coordinator strong, .chat-order-embed-tasks > strong { color: var(--text); font-size: 9px; }
+.chat-order-embed-tasks > div { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 6px; border-top: 1px solid var(--line); }
+.chat-order-embed-tasks > div span { min-width: 0; overflow-wrap: anywhere; }
+.chat-order-embed-tasks > div b { flex: 0 0 auto; color: var(--text); font-size: 8px; }
 .chat-message-bubble img { display: block; width: min(100%, 340px); max-height: 340px; border-radius: 8px; object-fit: contain; }
 .chat-message-typing { animation: chat-typing-enter 180ms ease-out both; }
 .chat-typing-bubble { display: inline-flex; min-width: 60px; min-height: 38px; align-items: center; justify-content: center; gap: 5px; padding: 0 13px; border: 1px solid color-mix(in srgb, var(--line) 82%, transparent); border-radius: 14px 14px 14px 3px; background: var(--surface); box-shadow: 0 3px 12px rgba(22,22,21,.055); }

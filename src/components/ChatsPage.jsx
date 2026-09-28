@@ -18,6 +18,8 @@ const formatTime = new Intl.DateTimeFormat('es-CO', { hour: '2-digit', minute: '
 const formatDate = new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })
 const formatDateTime = new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 const quoteStatusLabels = { sent: 'Pendiente de respuesta', accepted: 'Aceptada', rejected: 'Rechazada', superseded: 'Reemplazada' }
+const taskStatusLabels = { assigned: 'Asignada', in_progress: 'En curso', completed: 'Completada', blocked: 'Bloqueada' }
+const orderStatusLabels = { planning: 'En planificación', scheduled: 'Programado', in_progress: 'En curso', completed: 'Completado', cancelled: 'Cancelado' }
 
 function mergeMessages(currentMessages, refreshedMessages) {
   const messagesById = new Map(currentMessages.map((message) => [String(message.id), message]))
@@ -457,7 +459,31 @@ function ChatsPage() {
                         {senderName}
                         <span className="chat-message-role" data-role={senderRole.id} style={{ '--role-color': senderRole.color }}>{senderRole.label}</span>
                       </span>
-                      {message.quote ? (
+                      {message.order ? (
+                        <div className="chat-quote-embed chat-order-embed" aria-label={`Pedido OH-${String(message.order.id).padStart(6, '0')}`}>
+                          <div className="chat-quote-embed-main">
+                            <div className="chat-quote-embed-heading"><span>OH / PEDIDO</span><small data-status={message.order.status}>{orderStatusLabels[message.order.status] ?? message.order.status}</small></div>
+                            <strong className="chat-quote-embed-title">Pedido OH-{String(message.order.id).padStart(6, '0')}</strong>
+                            <div className="chat-quote-embed-event"><strong>{message.order.eventName}</strong><span>{message.order.venue}</span></div>
+                            <div className="chat-order-embed-dates">
+                              <span>Montaje <b>{formatDateTime.format(new Date(message.order.setupAt))}</b></span>
+                              <span>Evento <b>{formatDateTime.format(new Date(message.order.eventAt))}</b></span>
+                              <span>Desmontaje <b>{formatDateTime.format(new Date(message.order.dismantleAt))}</b></span>
+                            </div>
+                            <div className="chat-order-embed-coordinator"><span>Coordinación general</span><strong>{message.order.coordinatorName}</strong></div>
+                            <div className="chat-order-embed-tasks">
+                              <strong>Tareas asignadas</strong>
+                              {message.order.tasks.map((task) => (
+                                <div key={task.label}><span>{task.label} · {task.assignedToName}</span><b>{taskStatusLabels[task.status] ?? task.status}</b></div>
+                              ))}
+                            </div>
+                            <div className="chat-quote-embed-footer">
+                              <time dateTime={message.createdAt}>{formatTime.format(new Date(message.createdAt))}</time>
+                              {isOwnMessage && message.isRead && <span>Mensaje visto.</span>}
+                            </div>
+                          </div>
+                        </div>
+                      ) : message.quote ? (
                         <div className="chat-quote-embed" aria-label={`Cotización versión ${message.quote.version}`}>
                           <div className="chat-quote-embed-main">
                             <div className="chat-quote-embed-heading"><span>OH / COTIZACIÓN</span><small data-status={message.quote.status}>{quoteStatusLabels[message.quote.status]}</small></div>

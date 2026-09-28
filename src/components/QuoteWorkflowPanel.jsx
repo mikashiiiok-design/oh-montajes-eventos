@@ -243,8 +243,7 @@ function QuoteWorkflowPanel({ chat, account, isStaff, isOpen, onClose, onQuoteSu
           dismantleAt: toIsoString(orderDismantleAt),
         }),
       })
-      await refreshWorkflow()
-      setNotice('Pedido creado y asignado para planificación.')
+      onClose()
     } catch (requestError) {
       setError(requestError.message)
     } finally {

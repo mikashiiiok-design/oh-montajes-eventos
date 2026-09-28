@@ -488,6 +488,13 @@ function ChatsPage() {
                           <div className="chat-quote-embed-main">
                             <div className="chat-quote-embed-heading"><span>OH / COTIZACIÓN</span><small data-status={message.quote.status}>{quoteStatusLabels[message.quote.status]}</small></div>
                             <strong className="chat-quote-embed-title">Cotización · versión {message.quote.version}</strong>
+                            {(message.quote.status === 'accepted' || message.quote.status === 'rejected') && (
+                              <p className="chat-quote-decision-notice" role="status">
+                                {account.role === 'client'
+                                  ? `Tú ${message.quote.status === 'accepted' ? 'aceptaste' : 'rechazaste'} la cotización ${message.quote.version}.`
+                                  : `El cliente ${message.quote.status === 'accepted' ? 'aceptó' : 'rechazó'} la cotización ${message.quote.version}.`}
+                              </p>
+                            )}
                             <div className="chat-quote-embed-event"><strong>{message.quote.eventName}</strong><span>{message.quote.venue}</span></div>
                             <div className="chat-quote-embed-dates"><span>Montaje <b>{formatDateTime.format(new Date(message.quote.setupAt))}</b></span><span>Desmontaje <b>{formatDateTime.format(new Date(message.quote.dismantleAt))}</b></span></div>
                             <div className="chat-quote-embed-subtotal"><span>Subtotal de líneas</span><strong>{formatCurrency.format(Number(message.quote.subtotalAmount))}</strong></div>

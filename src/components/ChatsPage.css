@@ -75,6 +75,7 @@
 .chat-quote-embed-heading > small[data-status='sent'] { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); color: var(--accent); }
 .chat-quote-embed-heading > small[data-status='accepted'] { border-color: color-mix(in srgb, #38855e 45%, var(--line)); color: #38855e; }
 .chat-quote-embed-title { color: var(--text); font-size: 13px; }
+.chat-quote-decision-notice { margin: 0; padding: 8px 9px; border-left: 2px solid var(--accent); background: var(--bg); color: var(--text); font-size: 9px; font-weight: 700; line-height: 1.5; }
 .chat-quote-embed-event { display: grid; gap: 3px; }
 .chat-quote-embed-event strong { color: var(--text); font-size: 10px; }
 .chat-quote-embed-event span { color: var(--muted); font-size: 9px; line-height: 1.5; }

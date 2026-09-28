@@ -361,11 +361,6 @@ router.post('/quotes/:quoteId/accept', async (request, response) => {
        WHERE chat_id = $1 AND id <> $2 AND status = 'sent'`,
       [chat.id, quoteId],
     )
-    await client.query(
-      `INSERT INTO chat_messages (chat_id, sender_id, body)
-       VALUES ($1, $2, $3)`,
-      [chat.id, account.id, `Cotización versión ${quote.rows[0].version} aceptada.`],
-    )
     await client.query('UPDATE chat_conversations SET last_message_at = NOW() WHERE id = $1', [chat.id])
     await client.query('COMMIT')
     return response.json({ status: 'accepted' })
@@ -425,11 +420,6 @@ router.post('/quotes/:quoteId/reject', async (request, response) => {
        SET status = 'rejected', rejected_by = $2, rejected_at = NOW(), rejection_reason = $3
        WHERE id = $1`,
       [quoteId, account.id, reason || null],
-    )
-    await client.query(
-      `INSERT INTO chat_messages (chat_id, sender_id, body)
-       VALUES ($1, $2, $3)`,
-      [chat.id, account.id, reason ? `Cotización versión ${quote.rows[0].version} rechazada. Motivo: ${reason}` : `Cotización versión ${quote.rows[0].version} rechazada.`],
     )
     await client.query('UPDATE chat_conversations SET last_message_at = NOW() WHERE id = $1', [chat.id])
     await client.query('COMMIT')

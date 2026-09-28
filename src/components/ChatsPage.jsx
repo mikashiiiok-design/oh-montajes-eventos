@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowLeft, Check, Circle, ClipboardList, FileText, ImagePlus, LoaderCircle, MessageCircle, RotateCcw, Send, UserRound, X } from 'lucide-react'
+import { ArrowLeft, Check, Circle, ClipboardList, FileText, ImagePlus, LoaderCircle, MessageCircle, RotateCcw, Search, Send, UserRound, X } from 'lucide-react'
 import { chatAccessRoles, chatReopenRoles, getRoleInfo } from '../../shared/roles.js'
 import { apiRequest } from '../utils/api.js'
 import { compressChatImage } from '../utils/compressChatImage.js'
@@ -21,6 +21,10 @@ const quoteStatusLabels = { sent: 'Pendiente de respuesta', accepted: 'Aceptada'
 const taskStatusLabels = { assigned: 'Asignada', in_progress: 'En curso', completed: 'Completada', blocked: 'Bloqueada' }
 const orderStatusLabels = { planning: 'En planificación', scheduled: 'Programado', in_progress: 'En curso', completed: 'Completado', cancelled: 'Cancelado' }
 
+function formatRecordId(id) {
+  return `OH-${String(id).padStart(6, '0')}`
+}
+
 function mergeMessages(currentMessages, refreshedMessages) {
   const messagesById = new Map(currentMessages.map((message) => [String(message.id), message]))
   refreshedMessages.forEach((message) => messagesById.set(String(message.id), message))
@@ -30,6 +34,7 @@ function mergeMessages(currentMessages, refreshedMessages) {
 function ChatsPage() {
   const [account, setAccount] = useState(null)
   const [chats, setChats] = useState([])
+  const [chatSearch, setChatSearch] = useState('')
   const [activeChat, setActiveChat] = useState(null)
   const [selectedChatId, setSelectedChatId] = useState(() => new URLSearchParams(window.location.search).get('chat'))
   const [draft, setDraft] = useState('')
@@ -56,8 +61,17 @@ function ChatsPage() {
   const activeMessageCount = activeChat?.messages.length
   const activeReadMessageCount = activeChat?.messages.filter((message) => String(message.senderId) === String(account?.id) && message.isRead).length ?? 0
   const activeTypingUserIds = activeChat?.typingUsers?.map((user) => user.id).join(',') ?? ''
-  const openChats = chats.filter((chat) => chat.status === 'open')
-  const closedChats = chats.filter((chat) => chat.status === 'closed')
+  const normalizedChatSearch = chatSearch.trim().toLocaleLowerCase()
+  const filteredChats = normalizedChatSearch
+    ? chats.filter((chat) => [
+      chat.customer_name,
+      chat.customer_email,
+      `cliente ${formatRecordId(chat.customer_id)}`,
+      `chat ${formatRecordId(chat.id)}`,
+    ].some((value) => value?.toLocaleLowerCase().includes(normalizedChatSearch)))
+    : chats
+  const openChats = filteredChats.filter((chat) => chat.status === 'open')
+  const closedChats = filteredChats.filter((chat) => chat.status === 'closed')
 
   useEffect(() => {
     const previousTitle = document.title
@@ -345,9 +359,10 @@ function ChatsPage() {
         <span className="chats-list-avatar"><UserRound size={17} /></span>
         <span className="chats-list-copy">
           <span className="chats-list-meta">
-            <strong>{isStaff ? chat.customer_name : `Cotización OH-${String(chat.id).padStart(6, '0')}`}</strong>
+            <strong>{isStaff ? chat.customer_name : `Cotización ${formatRecordId(chat.id)}`}</strong>
             <time dateTime={chat.last_message_at}>{formatTime.format(new Date(chat.last_message_at))}</time>
           </span>
+          <span className="chats-list-identifiers"><span>Cliente {formatRecordId(chat.customer_id)}</span><span>Chat {formatRecordId(chat.id)}</span></span>
           <span className="chats-list-preview">
             {chat.last_message || (chat.last_message_has_image ? 'Imagen adjunta' : 'Solicitud de cotización')}
           </span>
@@ -393,18 +408,29 @@ function ChatsPage() {
             <p>{isStaff ? 'Chats abiertos y cerrados con clientes' : 'Sigue aquí tus solicitudes'}</p>
           </div>
           <div className="chats-list" aria-live="polite">
-            <section className="chats-list-section" aria-labelledby="open-chats-title">
-              <h2 id="open-chats-title">Abiertos <span>{openChats.length}</span></h2>
-              {openChats.length > 0
-                ? openChats.map((chat) => renderChatItem(chat))
-                : <div className="chats-list-section-empty"><p>{isStaff ? 'No hay chats abiertos.' : 'No tienes cotizaciones abiertas.'}</p>{!isStaff && chats.length === 0 && <a href="/galeria">Explorar galería</a>}</div>}
-            </section>
-            <section className="chats-list-section" aria-labelledby="closed-chats-title">
-              <h2 id="closed-chats-title">Cerrados <span>{closedChats.length}</span></h2>
-              {closedChats.length > 0
-                ? closedChats.map((chat) => renderChatItem(chat))
-                : <p className="chats-list-section-empty">{isStaff ? 'No hay chats cerrados.' : 'No tienes cotizaciones cerradas.'}</p>}
-            </section>
+            <label className="chats-list-search">
+              <Search size={15} aria-hidden="true" />
+              <input type="search" value={chatSearch} onChange={(event) => setChatSearch(event.target.value)} placeholder="Buscar por nombre o ID" aria-label="Buscar chats por nombre, ID de cliente o ID de chat" />
+              {chatSearch && <button type="button" onClick={() => setChatSearch('')} aria-label="Limpiar búsqueda"><X size={15} /></button>}
+            </label>
+            {normalizedChatSearch && filteredChats.length === 0 ? (
+              <p className="chats-list-search-empty">No encontramos chats con ese nombre o ID.</p>
+            ) : (
+              <>
+                <section className="chats-list-section" aria-labelledby="open-chats-title">
+                  <h2 id="open-chats-title">Abiertos <span>{openChats.length}</span></h2>
+                  {openChats.length > 0
+                    ? openChats.map((chat) => renderChatItem(chat))
+                    : <div className="chats-list-section-empty"><p>{isStaff ? 'No hay chats abiertos.' : 'No tienes cotizaciones abiertas.'}</p>{!isStaff && chats.length === 0 && <a href="/galeria">Explorar galería</a>}</div>}
+                </section>
+                <section className="chats-list-section" aria-labelledby="closed-chats-title">
+                  <h2 id="closed-chats-title">Cerrados <span>{closedChats.length}</span></h2>
+                  {closedChats.length > 0
+                    ? closedChats.map((chat) => renderChatItem(chat))
+                    : <p className="chats-list-section-empty">{isStaff ? 'No hay chats cerrados.' : 'No tienes cotizaciones cerradas.'}</p>}
+                </section>
+              </>
+            )}
           </div>
           {chats.length > 0 && !selectedChatId && <p className="chats-select-prompt">Selecciona un chat para ver la conversación.</p>}
           <div className="chats-rail-footer"><span>{account.name}</span><span>{isStaff ? 'Panel de equipo' : 'Atención OH'}</span></div>
@@ -420,7 +446,7 @@ function ChatsPage() {
                 <span className="chat-header-avatar"><UserRound size={19} /></span>
                 <div className="chat-header-copy">
                   <strong>{isStaff ? activeChat.customerName : 'Equipo OH Montajes'}</strong>
-                  <span>{isStaff ? activeChat.customerEmail : `Solicitud OH-${String(activeChat.id).padStart(6, '0')}`}</span>
+                  <span>Cliente {formatRecordId(activeChat.customerId)} · Chat {formatRecordId(activeChat.id)}{isStaff ? ` · ${activeChat.customerEmail}` : ''}</span>
                 </div>
                 <span className={`chat-status${activeChat.status === 'open' ? ' is-open' : ''}`}>
                   <Circle size={7} fill="currentColor" /> {activeChat.status === 'open' ? 'Abierto' : 'Cerrado'}

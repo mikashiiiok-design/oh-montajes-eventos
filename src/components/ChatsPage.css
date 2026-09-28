@@ -12,6 +12,11 @@
 .chats-rail-heading h1 { margin: 0 0 7px; font-size: 27px; font-weight: 600; line-height: 1.12; }
 .chats-rail-heading > p:last-child { margin: 0; color: var(--muted); font-size: 11px; }
 .chats-list { flex: 1; overflow: auto; }
+.chats-list-search { position: sticky; z-index: 1; top: 0; display: flex; min-height: 42px; align-items: center; gap: 8px; margin: 0 12px; padding: 0 9px; border: 1px solid var(--line); background: var(--bg); color: var(--muted); }
+.chats-list-search input { width: 100%; min-width: 0; min-height: 38px; flex: 1; border: 0; outline: 0; background: transparent; color: var(--text); font: inherit; font-size: 10px; }
+.chats-list-search input::placeholder { color: var(--muted); }
+.chats-list-search button { display: grid; width: 26px; height: 26px; flex: 0 0 auto; place-items: center; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
+.chats-list-search-empty { margin: 0; padding: 18px 15px; color: var(--muted); font-size: 10px; line-height: 1.6; }
 .chats-list-section { padding: 12px 0 4px; }
 .chats-list-section + .chats-list-section { border-top: 1px solid var(--line); }
 .chats-list-section h2 { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0; padding: 3px 15px 9px; color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
@@ -27,6 +32,7 @@
 .chats-list-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .chats-list-meta strong { overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
 .chats-list-meta time, .chats-list-status { color: var(--muted); font-size: 9px; white-space: nowrap; }
+.chats-list-identifiers { display: flex; flex-wrap: wrap; gap: 4px 9px; color: var(--muted); font-size: 8px; font-variant-numeric: tabular-nums; }
 .chats-list-preview { overflow: hidden; color: var(--muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
 .chats-list-status { display: inline-flex; align-items: center; gap: 5px; }
 .chats-list-status svg { color: #57916c; }

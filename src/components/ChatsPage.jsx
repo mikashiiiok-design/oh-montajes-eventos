@@ -47,9 +47,11 @@ function ChatsPage() {
   const [respondingToQuoteId, setRespondingToQuoteId] = useState(null)
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false)
   const [isWorkflowOpen, setIsWorkflowOpen] = useState(false)
+  const [expandedImageUrl, setExpandedImageUrl] = useState('')
   const [error, setError] = useState('')
   const invoiceDialogRef = useRef(null)
   const workflowDialogRef = useRef(null)
+  const imageDialogRef = useRef(null)
   const messageListRef = useRef(null)
   const shouldAutoScrollRef = useRef(true)
   const imagePreviewRef = useRef('')
@@ -218,6 +220,13 @@ function ChatsPage() {
     if (isWorkflowOpen && !dialog.open) dialog.showModal()
     if (!isWorkflowOpen && dialog.open) dialog.close()
   }, [isWorkflowOpen])
+
+  useEffect(() => {
+    const dialog = imageDialogRef.current
+    if (!dialog) return
+    if (expandedImageUrl && !dialog.open) dialog.showModal()
+    if (!expandedImageUrl && dialog.open) dialog.close()
+  }, [expandedImageUrl])
 
   useEffect(() => () => {
     if (imagePreviewRef.current) URL.revokeObjectURL(imagePreviewRef.current)
@@ -550,7 +559,11 @@ function ChatsPage() {
                       ) : (
                         <div className="chat-message-bubble">
                           {message.body && <p>{message.body}</p>}
-                          {message.imageUrl && <a href={message.imageUrl} target="_blank" rel="noreferrer"><img src={message.imageUrl} alt="Imagen adjunta a la conversación" loading="lazy" onLoad={() => { if (shouldAutoScrollRef.current) scrollToLatestMessage() }} /></a>}
+                          {message.imageUrl && (
+                            <button className="chat-message-image" type="button" onClick={() => setExpandedImageUrl(message.imageUrl)} aria-label="Ampliar imagen adjunta" title="Ampliar imagen adjunta">
+                              <img src={message.imageUrl} alt="Imagen adjunta a la conversación" loading="lazy" onLoad={() => { if (shouldAutoScrollRef.current) scrollToLatestMessage() }} />
+                            </button>
+                          )}
                           <time dateTime={message.createdAt}>{formatTime.format(new Date(message.createdAt))}</time>
                           {isOwnMessage && message.isRead && <span className="chat-message-read">Mensaje visto.</span>}
                         </div>
@@ -616,6 +629,16 @@ function ChatsPage() {
           <QuoteWorkflowPanel chat={activeChat} account={account} isStaff={isStaff} isOpen={isWorkflowOpen} onClose={() => setIsWorkflowOpen(false)} onQuoteSubmitted={refreshSelectedConversation} />
         </dialog>
       )}
+
+      <dialog className="chat-image-dialog" ref={imageDialogRef} onClose={() => setExpandedImageUrl('')} onCancel={(event) => { event.preventDefault(); setExpandedImageUrl('') }} onClick={(event) => { if (event.target === event.currentTarget) setExpandedImageUrl('') }}>
+        <div className="chat-image-dialog-content">
+          <header className="chat-image-dialog-header">
+            <span>Imagen adjunta</span>
+            <button type="button" aria-label="Cerrar vista previa" onClick={() => setExpandedImageUrl('')}><X size={18} /></button>
+          </header>
+          {expandedImageUrl && <img src={expandedImageUrl} alt="Vista ampliada de la imagen adjunta" />}
+        </div>
+      </dialog>
 
       <dialog className="chat-invoice-dialog" ref={invoiceDialogRef} onClose={() => setIsInvoiceOpen(false)} onCancel={(event) => { event.preventDefault(); setIsInvoiceOpen(false) }}>
         {activeChat && (

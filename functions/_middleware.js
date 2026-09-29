@@ -13,9 +13,11 @@ const contentSecurityPolicy = [
 ].join('; ')
 
 export async function onRequest({ request, next }) {
-  const response = await next()
-  const headers = new Headers(response.headers)
   const pathname = new URL(request.url).pathname
+  const response = pathname === '/400' || pathname === '/500'
+    ? Response.redirect(new URL('/', request.url), 302)
+    : await next()
+  const headers = new Headers(response.headers)
 
   headers.set('Content-Security-Policy', contentSecurityPolicy)
   headers.set('Permissions-Policy', 'camera=(), geolocation=(), microphone=()')

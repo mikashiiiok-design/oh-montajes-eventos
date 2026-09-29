@@ -95,6 +95,7 @@ export const galleryCategories = [
       { id: 'archivero-dos', name: 'Archivero de dos gavetas', detail: 'Vertical · cerradura incluida', price: 65000 },
       { id: 'archivero-cuatro', name: 'Archivero de cuatro gavetas', detail: 'Vertical · acabado gris', price: 92000 },
       { id: 'estante-apoyo', name: 'Estante de apoyo', detail: '5 niveles · estructura metálica', price: 78000 },
+      { id: 'estante-madera', name: 'Estante de madera', detail: 'Horizontal · acabado natural', price: 100000 },
     ],
   },
 ]
